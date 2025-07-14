@@ -36,7 +36,7 @@
 
 ## Introduction
 
-This is a template Bash 4.3+ (incuding 5) that - once you're familiar with it - will help you get new scripts up and running quickly; with powerful, bulletproof features and minimal fuss.
+[**This .sh file**](https://github.com/jim-collier/x9bash5-template/blob/main/bash5-template.sh) is a template and library for Bash 4.3+ (incuding 5) that - once you're familiar with it - will help you get new scripts up and running quickly. It includes powerful (for Bash), bulletproof features and functions with minimal fuss.
 
 
 ## Example features and functions.
@@ -44,7 +44,7 @@ This is a template Bash 4.3+ (incuding 5) that - once you're familiar with it - 
 
 ## Coding style
 
-Author's [Bash 5 coding style document](https://github.com/jim-collier/bash_v5_code-style/blob/main/CODE_STYLE.md)
+Here is the author's [Bash 5 coding style document](https://github.com/jim-collier/bash_v5_code-style/blob/main/CODE_STYLE.md). This template helps you follow Bash best-practices.
 
 
 ## Copyright and license

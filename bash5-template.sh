@@ -18,18 +18,21 @@
 ## shellcheck disable=2162  ## 'read without -r will mangle backslashes.'
 ## shellcheck disable=2181  ## 'Check exit code directly, not indirectly with $?.'
 
+##	Github home for template+library: https://github.com/jim-collier/x9bash5-template/
+##	Using Bash5 style guide ........: https://github.com/jim-collier/bash5-style-guide/blob/main/CODE_STYLE.md
+
 ##	Purpose .............: See fAbout().
 ##	Args ................: See fSyntax().
 ##	Copyright and license: See fCopyright().
 ##	History:
 
 ## Constants
-declare -r  thisVersion="v1.0.0-beta.1"  ## Put you script's semantic version here.
-declare -r  thisCopyrightYear="2025"     ## Put your copyright date here.
-declare -r  thisAuthor="Jim Collier"     ## Put your copyright name here.
-declare -r  runAsOtherUser=""            ## E.g. sudo aka root, or another username. Leave blank for no sudo or user change.
-declare -r  templateVersion="v10.0.0"
-declare -r  templateCopyrightYear="2011-2025"
+declare -r  thisVersion="v1.0.0-beta.1"        ## Put you script's semantic version here.
+declare -r  thisCopyrightYear="2025"           ## Put your copyright date here.
+declare -r  thisAuthor="Jim Collier"           ## Put your copyright name here.
+declare -r  runAsOtherUser=""                  ## E.g. sudo aka root, or another username. Leave blank for no sudo or user change.
+declare -r  templateVersion="v10.0.0-beta.1"   ## Template version, don't change.
+declare -r  templateCopyrightYear="2011-2025"  ## Template copyright year, don't change.
 declare -ri atLeastOneArgRequired=0
 declare  -i doQuietly=0
 declare  -i doPromptToContinue=1

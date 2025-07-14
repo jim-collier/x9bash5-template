@@ -51,6 +51,7 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 	- HEREDOC, while easier to work with on the surface, is actually too hard for most editors to work with - vis-a-vis mix of tabs and spaces for script-formatting vs output indenting. It's just not worth the constant fuss, unless it's just a big blob of unindented paragraphs.
 - Refactored or rewrote at least a dozen existing functions, to be simpler and more bash-idiomatic. [≅2025-06 to 07]
 - Moved this changelog out of the template itself, and into this doc. (And reversed the chronology, and converted to md format.)
+- Added the venerable flag 'doPromptToContinue' back in! Thought it would never happen. But along with 'doQuietly', which is now longer rendundant, is a quick an easy way to add prompt-to-contiue-ing in and out with ease.
 - Renamed most _f*() functions to just f*() for user-fliendliness.
 - Moved unit testing out of main template, now 'source' template from testing scripts.
 - Tested main template needed modification to be able to run "sourced" from one or more unit-testing files. (No changes needed.)

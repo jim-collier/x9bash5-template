@@ -50,9 +50,16 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 - For fCopyright(), fAbout(), and fSyntax(): Changed back from HEREDOC format to fEcho_Clean. [≅2025-06]
 	- HEREDOC, while easier to work with on the surface, is actually too hard for most editors to work with - vis-a-vis mix of tabs and spaces for script-formatting vs output indenting. It's just not worth the constant fuss, unless it's just a big blob of unindented paragraphs.
 - Refactored or rewrote at least a dozen existing functions, to be simpler and more bash-idiomatic. [≅2025-06 to 07]
+- Moved this changelog out of the template itself, and into this doc. (And reversed the chronology, and converted to md format.)
 - Renamed most _f*() functions to just f*() for user-fliendliness.
 - Moved unit testing out of main template, now 'source' template from testing scripts.
-- Modify if necessary to be able to run "sourced" from one or more unit-testing files. (No changes needed.)
+- Tested main template needed modification to be able to run "sourced" from one or more unit-testing files. (No changes needed.)
+- Split single copyright notice into two: one for template consumer & script author, second for 'based on' template author.
+- Improved help comments in fParseArgs().
+- Updated some old counter increment styles to e.g. ((counter++)).
+- Moved some function groups around so that the two most core, integral groups [e.g. fEcho*() and error-handling] are at the bottom in their own group, but in otherwise in the main generic section, the easiest to delete appears lowest.
+- Added function group header fields 'Can be deleted?' and 'Statefulness'.
+- Moved error-handling set-up directly underneath error-handling functions.
 
 
 ### Removed

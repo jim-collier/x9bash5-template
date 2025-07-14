@@ -96,12 +96,12 @@ fInit(){
 	fParseArgs  "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}"
 	declare -r allArgsStr; declare -ar allArgsArr
 
-	## Convert non-string args passed as strings
+	## Arg validation and normalization
 #	declare -i boolArg  ; fGetBool boolArg   "${arg_boolArg}"   0
 #	declare -i intArg   ; fGetInt  intArg    "${arg_intArg}"    0
-#	declare    floatArg ; _fGenNum  floatArg  "${arg_floatArg}"  0
+#	declare    floatArg ; fGetNum  floatArg  "${arg_floatArg}"  0
 
-	## Logging
+	## Get logging filespec (without yet creating it)
 	declare logFilespec # ; fLog_GetFilespec logFilespec
 
 #	#DEBUG
@@ -111,7 +111,7 @@ fInit(){
 #	fEchoVarAndVal arg_intArg
 #	exit
 
-#	## Process macros in variables
+#	## Process convenience macros in variables that you might advertise to users
 #	zipMountDir="${zipMountDir//'•FILENAME•'/"${zipFileName}"}" ## Supports macros "•FILENAME•" and "•SERIAL•"
 #	local -r zipMountDir="${zipMountDir}"
 
@@ -136,7 +136,7 @@ fInit(){
 		((! doQuietly)) && fEcho_Clean
 	fi
 
-	## Makeitso
+	## Ready to go; call main function with fully-validate variables.
 	fRunFunctionAs  "${runAsOtherUser}"  fMain  "${logFilespec}"  "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}"
 
 }
@@ -144,7 +144,11 @@ fInit(){
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 fMain(){
-	## We may only have access to variables passed here, that were already carefully initialized and validated by fInit(). Up to 34 args.
+	## We only have access to variables passed here, that were carefully initialized and validated by fInit().
+	## Take them in as read-only (and as integers if appropriate), unless you have good reason to modify them.
+	## At this early stage, there will (necessarily) be no Bash arrays or associative arrays yet, which
+	##   couldn't be passed anyway. (The args array will have already served it's purpose.)
+	## There can be up to 32 args beyond OG user name, home, and log filespec (the latter which may be null).
 
 	## Args; fRunFunctionAs() always passes OG username and userhome as first two params. fInit() usually passes logfilespec as third.
 	declare -r origUserName="$1" ; shift || true
@@ -163,8 +167,9 @@ fParseArgs(){
 
 	## Look for stars "✶✶✶✶✶✶✶✶" for places to custom-modify unique instances of this function.
 
-	## GENERIC (don't modify): Populate args array and string. Note: Args are 1-based index, but the resulting array of args at the end is a normal 0-based index.
-	local -r -i maxPracticalArgCount=50  ## In bourne shell, 9 is the highest. In Bash, it's 2MB, or say somewhere around 10k args. For script readabality and performance, best to keep it MUCH lower, say about 20-99 arguments.
+	## GENERIC (don't modify): Populate args array and string.
+	## Note: Args are 1-based index, but the resulting array of args at the end is a normal 0-based index.
+	local -r -i maxPracticalArgCount=50  ## In Bash we have 2MB of args, or somewhere around 10k by count. For readabality and performance, keep it MUCH lower, say ~20-99.
 	local    -i totalArgCount=0
 	local    -i switchCounter=0
 	allArgsStr=""
@@ -193,88 +198,89 @@ fParseArgs(){
 
 	## Process arguments
 	for currentArg in "${allArgsArr[@]}"; do
-
-		#Debug
-		#fEchoVarAndVal currentArg
+		#fEcho_Clean "Debug: currentArg ........: '${currentArg}'"
 
 		## Test if an option switch or not
 		if [[ -n "$(echo "${currentArg}" | grep -P "^\-(\-?)[^\ \-]" 2>/dev/null || true)" ]]; then
-			## It's an option switch
-			#fEcho_Clean "debug: switch ...........: '${currentArg}'"
+			## It's an option (either unary or long-option, we don't know yet)
+			#fEcho_Clean "Debug: option ............: '${currentArg}'"
 
-			## Check if this was supposed to NOT be a switch (eg expecting a parameter after previous switch)
-			((${expectingSwitchParamForNextArg})) && fThrowError "Expecting a non-switch argument for '${lastSwitch}', instead got '${currentArg}'."  "${FUNCNAME[0]}"
-			switchCounter=$((switchCounter+1))
+			## Check if this was supposed to NOT be a unary switch (eg expecting a parameter after previous long-option)
+			((expectingSwitchParamForNextArg)) && fThrowError "Expecting a long-option argument for '${lastSwitch}', instead got another option '${currentArg}'."
+			((switchCounter++))
 
 			## Validate switches, and act on unary switches
 			lastSwitchAsPassed="${currentArg}"
-			tmpStr="${currentArg,,}" #.....: Lower case
+			tmpStr="${currentArg,,}"
+
 			## Strip switch dashes off
 			[[ "-"  == "${tmpStr:0:1}" ]] && tmpStr="${tmpStr:1}"
 			[[ "-"  == "${tmpStr:0:1}" ]] && tmpStr="${tmpStr:1}"
-			lastSwitch="${tmpStr}" #...: Remember lastSwitch
+			lastSwitch="${tmpStr}" ## Remember lastSwitch
 
 			case "${tmpStr}" in
 
-				## ✶✶✶✶✶✶✶✶ PUT CUSTOM UNITARY SWITCH TESTS AND ASSIGNMENTS HERE ✶✶✶✶✶✶✶✶ (Comment this test out if this script accepts no such thing.)
-			#	"force-unmount-first")  doUnmountFirst=1  ;;
+			#	## ✶✶✶✶✶✶✶✶ PUT CUSTOM UNARY SWITCH TESTS AND PARENT BOOLEAN VARIABLE ASSIGNMENTS HERE
+			#	"unary-switch")  booleanVariable=1  ;;
 
-				## ✶✶✶✶✶✶✶✶ PUT TESTS FOR CUSTOM SWITCH LOGIC THAT EXPECTS A SWITCH PARAMETER TO FOLLOW, HERE ✶✶✶✶✶✶✶✶
-			#	"d") expectingSwitchParamForNextArg=1 ;;
+			#	## ✶✶✶✶✶✶✶✶ PUT TESTS FOR CUSTOM LONG-OPTION LOGIC THAT EXPECTS AN ARGUMENT TO FOLLOW, HERE
+			#	"long-option-with-arg-to-follow") expectingSwitchParamForNextArg=1 ;;
 
 				## ¯\_(ツ)_/¯
-				*) fThrowError  "Argument invalid or not expected in this context: '${currentArg}'."  "${FUNCNAME[0]}" ;;
+				*) fThrowError  "Unexpected option in this context: '${currentArg}'."  ;;
 
 			esac
 		else
-			## It's not an option switch; could be an option switch param, or a positional arg
+			## It's not an option switch; could be a long-option argument, or a positional arg
 
-			if ((expectingSwitchParamForNextArg)); then
-				## Expecting option switch param
-				#fEcho_Clean "debug: param for switch '${lastSwitch}': '${currentArg}'"
+			if ((expectingSwitchParamForNextArg)); then :
+				## Now we know to expecting an long-option argument
+				#fEcho_Clean "Debug: arg for long-option: '${lastSwitch}': '${currentArg}'"
 
-				## ✶✶✶✶✶✶✶✶ PUT CUSTOM SWITCH PARAMETER TESTS AND ASSIGNMENTS HERE (parameter that follows a switch) ✶✶✶✶✶✶✶✶
-				case "${lastSwitch,,}" in
-				#	"d") tryMethodFirst="${currentArg}" ;;
-					*)   fThrowError "Unkown parameters. Switch: '${lastSwitchAsPassed}', current parameter: '${currentArg}'."  "${FUNCNAME[0]}" ;;
-				esac
-				expectingSwitchParamForNextArg=0
+			#	## ✶✶✶✶✶✶✶✶ PUT CUSTOM LONG-OPTION ARGUMENT TESTS AND PARENT VARIABLE ASSIGNMENTS HERE
+			#	case "${lastSwitch,,}" in
+			#		"long-option-with-arg-to-follow") someParentVariable="${currentArg}" ;;
+			#		*)                                fThrowError "Unkown option: '${lastSwitchAsPassed}', current parameter: '${currentArg}'." ;;  ## A redundant check.
+			#	esac
+			#	expectingSwitchParamForNextArg=0
 
 			else
 				## Well it must be a positional arg then.
-				positionalArgCounter=$((positionalArgCounter+1))
-				[[ $positionalArgCounter -gt $parseArgs_maxPositionalArgCount ]]  && fThrowError "Too many positional arguments: ${positionalArgCounter}, for max of ${parseArgs_maxPositionalArgCount}."  "${FUNCNAME[0]}"
-				#fEcho_Clean "debug: positional arg #${positionalArgCounter}: '${currentArg}'"
+				((positionalArgCounter++))
+				((positionalArgCounter > parseArgs_maxPositionalArgCount))  && fThrowError "Too many positional arguments: ${positionalArgCounter}, for max of ${parseArgs_maxPositionalArgCount}."
+				#fEcho_Clean "Debug: positional arg #${positionalArgCounter}: '${currentArg}'"
 
-				## ✶✶✶✶✶✶✶✶ PUT CUSTOM POSITIONAL ARG LOGIC HERE (only use one of the following methods, delete the other) ✶✶✶✶✶✶✶✶
+				## ✶✶✶✶✶✶✶✶ PUT CUSTOM POSITIONAL ARG LOGIC HERE (only use one of the following methods, delete the other)
 
-				## Assign - method 1 (less flexible but easier for simple args)
+				## Assign parent variables; Method 1: argument counter (less flexible but best for simple input)
 				case $positionalArgCounter in
 					1) stringArg="${currentArg}"      ;;
 					2) arg_intArg="${currentArg}" ;;
-					*) fThrowError "Unexpected positional argument # ${positionalArgCounter}: '${currentArg}'."  "${FUNCNAME[0]}" ;;
+					*) fThrowError "Unexpected positional argument # ${positionalArgCounter}: '${currentArg}'." ;;
 				esac
 
-				## Assign - method 2 (more flexible depending on use-case)
-				case "${currentArg,,}" in
-					"enable")  doSetEnable=1   ;;
-					"disable") doSetDisable=1  ;;
-					"start")   doStart=1       ;;
-					"stop")    doStop=1        ;;
-					"list")    doList=1        ;;
-					*)
-						(( positionalArgCounter <  (totalArgCount-switchCounter) )) && fThrowError "Unknown positional argument '${currentArg}'."  "${FUNCNAME[0]}"
-						(( positionalArgCounter <= 1                             )) && fThrowError "Unexpected positional argument #${positionalArgCounter}: '${currentArg}'."  "${FUNCNAME[0]}"
-						imgGroup="${currentArg,,}"
-						;;
-				esac
+			#	## Assign parent variables; Method 2: test argument contents (possibly more flexible depending on use-case)
+			#	case "${currentArg,,}" in
+			#		"enable")  doEnable=1   ;;
+			#		"disable") doDisable=1  ;;
+			#		"start")   doStart=1    ;;
+			#		"stop")    doStop=1     ;;
+			#		"list")    doList=1     ;;
+			#		*)
+			#			if (( positionalArgCounter <  (totalArgCount-switchCounter) )); then
+			#				fThrowError "Unknown positional argument '${currentArg}'."
+			#			else
+			#				fThrowError "Unexpected positional argument #${positionalArgCounter}: '${currentArg}'."
+			#			fi
+			#		;;
+			#	esac
 
 			fi
 		fi
 	done
 	((expectingSwitchParamForNextArg)) && fThrowError "Never received a parameter for switch '--${lastSwitch}'."
 
-:;}  ## 'true' has to be the last thing or this function errors for some reason.
+:;}  ## 'true' has to be the last thing or this function errors [the joys of the mysterious 'set -e'].
 
 
 
@@ -282,7 +288,7 @@ fParseArgs(){
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 fCleanup(){
 	((_vLog_DidInitFsObjs)) && _fLog_Cleanup
-	if ((! doQuietly)); then :;
+	if ((! doQuietly)); then
 		fEcho_Clean
 	fi
 }
@@ -714,7 +720,7 @@ __pGetX_Common(){  ## Common between fGetInt(), fGetNum(), and fRoundNum(). Retu
 
 fGetInt(){
 	## Extracts, validates, and/or defaults a +/- integer. (A surprisingly hard problem in bash.) !locale-aware
-	## Removing commas and insignificant 0s. Does not round. (To get a rounded integers, use '_fGenNum NUM 0'.) For %, divides by 100 then truncates.
+	## Removing commas and insignificant 0s. Does not round. (To get a rounded integers, use 'fGetNum NUM 0'.) For %, divides by 100 then truncates.
 	## Unit tests passed, code minified on: 20250708.
 	local -n varRef_s74bm=$1       ## Arg <REQUIRED>: Variable for return integer.
 	local -r arg_inputVal="$2"     ## Arg [optional]: Input string to extract/convert to integer.
@@ -1137,21 +1143,31 @@ fRemoveOldLogs(){
 	fi
 :;}
 
+##	Purpose ..........: A little more safe rm. More checks, and optionally won't delete a non-empty dir.
+##	Can be deleted? ..: Yes
+##	Statefulness .....:
+##	Input ............:
+##	Function return...:
+##	Stdout ...........:
+##	StdErr ...........:
+##	Other side-effects:
+##	Notes ............:
+##	Dependents .......: [none]
+##	Dependencies .....: fThrowError()
+##	Unit tests passed :
 fSafer_rm(){
-	## Purpose: A little more safe rm. Optionally won't delete a non-empty dir.
-	## Args:
-	local    -r rmDir="$1"            ## Arg <REQUIRED>: Dir to delete.
-	local       raw_ignoreError="$2"  ## Arg [optional]: Ignore error on rm.
-	local       raw_mustBeEmpty="$3"  ## Arg [optional]: Dir must be empty, or error.
-	local -i ignoreError=0; [[ "${raw_ignoreError}" =~ "1"|"true"|"TRUE" ]] && ignoreError=1; local -i -r ignoreError=$ignoreError
-	local -i mustBeEmpty=1; [[ "${raw_mustBeEmpty}" =~ "1"|"true"|"TRUE" ]] && mustBeEmpty=1; local -i -r mustBeEmpty=$mustBeEmpty
-	[[   -z "${rmDir}"               ]] && fThrowError  "No folder to delete specified."               "${FUNCNAME[0]}"
-	[[ ! -d "${rmDir}"               ]] && fThrowError  "Folder to delete doesn't exist: '${rmDir}'."  "${FUNCNAME[0]}"
-	[[      "${rmDir}" == "/"        ]] && fThrowError  "I refuse to try to delete '/'!."              "${FUNCNAME[0]}"
-	[[      "${rmDir}" == "${HOME}"  ]] && fThrowError  "I refuse to try to delete '${HOME}/'!."       "${FUNCNAME[0]}"
-	[[      "${rmDir}" == "${HOME}/" ]] && fThrowError  "I refuse to try to delete '${HOME}/'!."       "${FUNCNAME[0]}"
+	local -r rmDir="$1"            ## Arg <REQUIRED>: Dir to delete.
+	local    raw_ignoreError="$2"  ## Arg [optional]: Ignore error on rm. [Default 0]
+	local    raw_mustBeEmpty="$3"  ## Arg [optional]: Dir must be empty, or error. [Default 1]
+	local -i ignoreError=0; [[ "${raw_ignoreError,,}" =~ "1"|"true" ]] && ignoreError=1; local -ri ignoreError=$ignoreError
+	local -i mustBeEmpty=1; [[ "${raw_mustBeEmpty,,}" =~ "1"|"true" ]] && mustBeEmpty=1; local -ri mustBeEmpty=$mustBeEmpty
+	[[   -z "${rmDir}"               ]] && fThrowError  "No folder to delete specified."
+	[[ ! -d "${rmDir}"               ]] && fThrowError  "Folder to delete doesn't exist: '${rmDir}'."
+	[[      "${rmDir}" == "/"        ]] && fThrowError  "I refuse to try to delete '/'!."
+	[[      "${rmDir}" == "${HOME}"  ]] && fThrowError  "I refuse to try to delete '${HOME}/'!."
+	[[      "${rmDir}" == "${HOME}/" ]] && fThrowError  "I refuse to try to delete '${HOME}/'!."
 	if [[ $mustBeEmpty -eq 1 ]] && [[ -n "$(ls -A "${rmDir}" 2>/dev/null || true)" ]]; then
-		fThrowError  "Can't delete non-empty folder '${rmDir}/'." "${FUNCNAME[0]}"
+		fThrowError  "Can't delete non-empty folder '${rmDir}/'."
 	fi
 	fEcho "Removing folder '${rmDir}' ..."
 	if [[ $ignoreError -eq 1 ]]; then
@@ -1161,10 +1177,25 @@ fSafer_rm(){
 	fi
 :;}
 
+
+##	Purpose ..........: Example function header
+##	Can be deleted? ..:
+##	Statefulness .....:
+##	Input ............:
+##	Function return...:
+##	Stdout ...........:
+##	StdErr ...........:
+##	Other side-effects:
+##	Notes ............:
+##	Dependents .......:
+##	Dependencies .....:
+##	Unit tests passed :
+
+
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Stateless generic filesystem-reading/filtering functions (minified).
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....:
+##	Group purpose ....: Generic filesystem-reading/filtering functions (minified)
+##	Can be deleted? ..: Yes.
+##	Statefulness .....: Each caller holds their own state.
 ##	Input ............:
 ##	Function return...:
 ##	Stdout ...........:
@@ -1276,9 +1307,9 @@ __pFilesys_DoScan_Sub(){
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Stateless generic timer functions (minified).
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....:
+##	Group purpose ....: Generic timer functions (minified).
+##	Can be deleted? ..: Yes. External unit-test scripts will break, but not this script.
+##	Statefulness .....: Each caller holds their own state.
 ##	Input ............:
 ##	Function return...:
 ##	Stdout ...........:
@@ -1345,9 +1376,9 @@ fTimer_GetET(){
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Generic unit-testing (minified).
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....:
+##	Group purpose ....: Generic unit-testing (minified).
+##	Can be deleted? ..: Yes. External unit-test scripts will break, but not this script.
+##	Statefulness .....: Stateless.
 ##	Input ............:
 ##	Function return...:
 ##	Stdout ...........:
@@ -1455,15 +1486,15 @@ fAssert_Eval_ShouldNotError(){
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Generig debugging, tracing, & profiling-related stuff (minified).
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....:
+##	Group purpose ....: Generig debugging, tracing, and future profiling (minified).
+##	Can be deleted? ..: Yes. There is no default template use of any of it.
+##	Statefulness .....: Single global state.
 ##	Input ............:
 ##	Function return...:
 ##	Stdout ...........:
 ##	StdErr ...........:
 ##	Other side-effects:
-##	Notes ............: Doesn't yet profile.
+##	Notes ............: Doesn't yet profile call path count and timing, only tracing.
 ##	Dependents .......:
 ##	Dependencies .....:
 ##	Unit tests passed :
@@ -1515,22 +1546,24 @@ function fdbgEchoVarAndVal(){
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Generic logging (minified).
-## Note: You can also write directly to log file yourself at any time after fLog_Init() or first fLog_Line() or fLog_Pipe(), and/or 'mv' the file after fLog_Cleanup().
-##		fLog_Line() and/or fLog_Pipe() ...: The only required function[s] to use, if you want to log stuff. E.g.:
-##			fLog_Line "Hello"
-##			find /etc -type l | fLog_Pipe
-##		fLog_GetFilespec() ................: If you want to know what the log filespec will be, before it's created.
-##		fLog_Init() .......................: If you want to explicitly init the logfile, but not necessary.
-##		fLog_Cleanup() ....................: Not necessary if you don't run as root.
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....:
+##	Group purpose ....: Generic logging (minified).
+##	Can be deleted? ..: Yes. The only default template occurrence an fInit() is commented out.
+##	Statefulness .....: Single global state.
 ##	Input ............:
 ##	Function return...:
 ##	Stdout ...........:
 ##	StdErr ...........:
 ##	Other side-effects:
-##	Notes ............:
+##	Notes:
+##		You can also write directly to log file yourself at any time after fLog_Init() or first fLog_Line() or fLog_Pipe(), and/or 'mv' the file after fLog_Cleanup().
+##			The only 'required' function you need to call for logging:
+##				fLog_Line()   E.g.: fLog_Line "Hello"
+##			Or for continuous streamed logging (even from function output):
+##				fLog_Pipe()   E.g.: fMyFunctionOrCommand | fLog_Pipe
+##			Other functions you can *optionally* invoke:
+##				fLog_GetFilespec() ................: If you want to know what the log filespec will be, before it's created.
+##				fLog_Init() .......................: If you want to explicitly init the logfile, but is not necessary.
+##				fLog_Cleanup() ....................: Not strictly necessary if you don't run as root, as it only updates file permissions to OG user.
 ##	Dependents .......:
 ##	Dependencies .....:
 ##	Unit tests passed :
@@ -1540,7 +1573,7 @@ readonly      defaultLogMiddleSubdirs="var/log"
 declare       _vLog_Dir=""  _vLog_Filename=""  _vLog_Filespec=""  _vLog_WiledcardSpec=""  _vLog_Owner=""
 declare -i    _vLog_DidInitVars=0  _vLog_DidInitFsObjs=0
 fLog_GetFilespec(){
-	##	Purpose: Gives you the log filespec, without creating anything.
+	##	Purpose: Initializes everything and gives you the log filespec, without actually creating anything yet.
 	##	Args:
 	##		1 [REQUIRED]: varName      The variable to populate.
 	##		2 [optional]: LogDir       If not specified, defaults to "$(fGetOgUserHome)/var/log/${meName}"
@@ -1599,23 +1632,18 @@ __pLog_InitVars(){
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Generic echo-related stuff (minified).
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-declare -i _wasLastEchoBlank=0
-fEcho_Clean(){
-	if   [[ -n "$*" ]]         ; then echo -e "$*"; _wasLastEchoBlank=0
-	elif ((!_wasLastEchoBlank)); then echo ""     ; _wasLastEchoBlank=1; fi }
-# shellcheck disable=2120  ## References arguments, but none are ever passed; Just because this library function isn't called here, doesn't mean it never will in other scripts.
-fEcho()                   { if [[ -n "$*" ]]; then fEcho_Clean "[ $* ]"; else fEcho_Clean ""; fi; }
-fEcho_Force()             { fEcho_ResetBlankCounter; fEcho "$*";                                  }
-fEcho_Clean_Force()       { fEcho_ResetBlankCounter; fEcho_Clean "$*";                            }
-fEchoVarAndVal()          { fEcho_Clean "${2}${1} = '${!1}'";                                     }
-fEcho_ResetBlankCounter(){ _wasLastEchoBlank=0;                                                  }
-
-
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Generic error-handling  stuff (minified).
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+##	Group purpose ....: Generic error-handling (minified).
+##	Can be deleted? ..: Generally not - without also removing many generic functions that rely on it.
+##	Statefulness .....: Single global state.
+##	Input ............:
+##	Function return...:
+##	Stdout ...........:
+##	StdErr ...........:
+##	Other side-effects:
+##	Notes ............:
+##	Dependents .......:
+##	Dependencies .....:
+##	Unit tests passed :
 declare -i _wasCleanupRun=0
 declare -i _areDoingSoftErrors=0
 declare -i _ErrVal=0
@@ -1677,17 +1705,9 @@ fThrowError(){
 	fEcho_ResetBlankCounter
 	_ErrVal=1
 	{ ((_areDoingSoftErrors)) && return 1; } || exit 1; }
-fDefineTrap_Error_Fatal(){  true; _ErrVal=0; _areDoingSoftErrors=0; trap '_fTrap_Error         ERR    ${LINENO}  $?  $_' ERR; set -e; } #...: Standard; aborts script on error.
-fDefineTrap_Error_Soft(){   true; _ErrVal=0; _areDoingSoftErrors=1; trap '_fTrap_Error_Soft    ERR    ${LINENO}  $?  $_' ERR; set -e; } #...: Doesn't abort or show error, but sets false and returns error code of 1 from function.
-fDefineTrap_Error_Ignore(){ true; _ErrVal=0; _areDoingSoftErrors=1; trap '_fTrap_Error_Ignore  ERR    ${LINENO}  $?  $_' ERR; set +e; } #...: Eats errors and returns true.
-
-
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Execution entry point (do not modify)
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-
-## Define error and exit handling.
-set -eE
+fDefineTrap_Error_Fatal(){  true; _ErrVal=0; _areDoingSoftErrors=0; trap '_fTrap_Error         ERR    ${LINENO}  $?  $_' ERR; set -eE; } #...: Standard; aborts script on error.
+fDefineTrap_Error_Soft(){   true; _ErrVal=0; _areDoingSoftErrors=1; trap '_fTrap_Error_Soft    ERR    ${LINENO}  $?  $_' ERR; set -eE; } #...: Doesn't abort or show error, but sets false and returns error code of 1 from function.
+fDefineTrap_Error_Ignore(){ true; _ErrVal=0; _areDoingSoftErrors=1; trap '_fTrap_Error_Ignore  ERR    ${LINENO}  $?  $_' ERR; set +eE; } #...: Eats errors and returns true.
 fDefineTrap_Error_Fatal
 trap '_fTrap_Error SIGHUP  ${LINENO} $? $_' SIGHUP
 trap '_fTrap_Error SIGINT  ${LINENO} $? $_' SIGINT    ## CTRL+C
@@ -1695,6 +1715,39 @@ trap '_fTrap_Error SIGTERM ${LINENO} $? $_' SIGTERM
 trap '_fTrap_Exit  EXIT    ${LINENO} $? $_' EXIT
 trap '_fTrap_Exit  INT     ${LINENO} $? $_' INT
 trap '_fTrap_Exit  TERM    ${LINENO} $? $_' TERM
+
+
+#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+##	Group purpose ....: Generic echo-related functions (minified).
+##	Can be deleted? ..: NO; not without also removing many generic functions and template code that relies on it.
+##	Statefulness .....: Trivial single global state. (Only for count of blank lines output.)
+##	Input ............:
+##	Function return...:
+##	Stdout ...........:
+##	StdErr ...........:
+##	Other side-effects:
+##	Notes ............: The most useful feature about this collection, is by default not redundantly echoing
+##	                    repeated blank lines - which is tedious logic to recreate for every script.
+##	Dependents .......:
+##	Dependencies .....:
+##	Unit tests passed :
+declare -i _wasLastEchoBlank=0
+fEcho_Clean(){
+	if   [[ -n "$*" ]]         ; then echo -e "$*"; _wasLastEchoBlank=0
+	elif ((!_wasLastEchoBlank)); then echo ""     ; _wasLastEchoBlank=1; fi }
+# shellcheck disable=2120  ## References arguments, but none are ever passed; Just because this library function isn't called here, doesn't mean it never will in other scripts.
+fEcho()                   { if [[ -n "$*" ]]; then fEcho_Clean "[ $* ]"; else fEcho_Clean ""; fi; }
+fEcho_Force()             { fEcho_ResetBlankCounter; fEcho "$*";                                  }
+fEcho_Clean_Force()       { fEcho_ResetBlankCounter; fEcho_Clean "$*";                            }
+fEchoVarAndVal()          { fEcho_Clean "${2}${1} = '${!1}'";                                     }
+fEcho_ResetBlankCounter(){ _wasLastEchoBlank=0;                                                  }
+
+
+#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Execution entry point (do not modify)
+#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+
+set -eE  ## This is redundant with error-handling setup above, but here just to be clear, and to show where to override with '+eE'.
 
 ## Check if sourced.
 __pIsSourced(){

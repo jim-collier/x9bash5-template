@@ -25,21 +25,25 @@
 ![Status: Failing](https://img.shields.io/badge/Status-Failing-red)
 -->
 
-# Readme<!-- omit from toc -->
+# Bash 5 template and library <!-- omit from toc -->
 
 ## Table of contents<!-- omit from toc -->
 - [Introduction](#introduction)
 - [Example features and functions.](#example-features-and-functions)
+- [Using it](#using-it)
 - [Coding style](#coding-style)
 - [Copyright and license](#copyright-and-license)
 
 
 ## Introduction
 
-[**This .sh file**](https://github.com/jim-collier/x9bash5-template/blob/main/bash5-template.sh) is a template and library for Bash 4.3+ (incuding 5) that - once you're familiar with it - will help you get new scripts up and running quickly. It includes powerful (for Bash), bulletproof features and functions with minimal fuss.
+[**This .sh file**](https://github.com/jim-collier/x9bash5-template/blob/main/bash5-template.sh) is a one-file template and library for Bash 4.3+ (incuding 5) that - once you're familiar with it - will help you get new scripts up and running quickly. It includes powerful (for Bash), bulletproof features and functions with minimal fuss.
 
 
 ## Example features and functions.
+
+
+## Using it
 
 
 ## Coding style

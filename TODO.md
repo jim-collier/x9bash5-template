@@ -7,6 +7,8 @@
 | 20250711    |        | 5 |             |     |               | Finish fTimer_*() functions. | Blocked by some math functions which are now done.
 | 20250711    |        | 5 | 20250706    | JC  |               | Finish fFilesys_*() functions. | Blocked by fTimer_*().
 | 20250711    |        | 3 | 20250706    | JC  |               | For most generic functions, detect missing use of *nameref* variables by calling functions - for wich native Bash gives a cryptic, useless error message. | Eg: `[[ -v $1 ]] \|\| fThrowError "${errMissingRef_Alter_AssocArray}"`
+| 20250711    |        | 5 | 20250706    | JC  |               | Make sure generic functions observe performance guidelines from bash5-style-guide, and document intentional exceptions.
+| 20250711    |        | 5 | 20250706    | JC  |               | Make sure entire template observes style guidelines from bash5-style-guide, and document intentional exceptions.
 | 20250711    |        | 2 | 20250706    | JC  |               | Make sure each function has a group or individual header.
 | 20250711    |        | 2 | 20250706    | JC  |               | Make sure each function make sure arguments are commented.
 | 20250711    |        | 2 | 20250706    | JC  |               | Make sure each function has arg comments | E.g. `Arg <REQUIRED>\|[optional]: Description`.

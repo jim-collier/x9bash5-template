@@ -63,6 +63,7 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 - Moved error-handling set-up directly underneath error-handling functions.
 - Added fDefineTrap_Error_ExitOnThrow() for future use with 'set +e' (which will probably never migrate too as the developer overhead is too damn high).
 	- Instead, significantly mitigate with `set -e` with `set -E`, `set -o pipefail`, and `shopt -s inherit_errexit`.
+- Added `set -u`, which required a significant amount of refactoring (mostly via search and replace) to give all numbered args default empty values, e.g. "${1:-}". That didn't change any existing expected behavior. Existing unit tests still pass.
 
 
 ### Removed

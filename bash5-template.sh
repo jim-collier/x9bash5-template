@@ -19,12 +19,12 @@
 ## shellcheck disable=2181  ## 'Check exit code directly, not indirectly with $?.'
 
 ##	Github home for template+library ......: https://github.com/jim-collier/x9bash5-template/
-##		Changelog .........................: https://github.com/jim-collier/bash-5-ultimate-guide/blob/main/CHANGELOG.md
-##		Remaining to-do ...................: https://github.com/jim-collier/x9bash5-template/blob/main/TODO.md
+##	    Changelog .........................: https://github.com/jim-collier/bash-5-ultimate-guide/blob/main/CHANGELOG.md
+##	    Remaining to-do ...................: https://github.com/jim-collier/x9bash5-template/blob/main/TODO.md
 ##	Using Bash5 style and performance guide: https://github.com/jim-collier/bash-5-ultimate-guide/blob/main/bash-5-ultimate-guide.md
-##		Note: This template is not yet 100% in line with either the style nor performance parts of the guide.
-##		      It mostly is, and where it counts. But over time will be brought fully in line, and intentional
-##		      exceptions will be documented (what & why).
+##	    Note: This template is not yet 100% in line with either the style nor performance parts of the guide.
+##	        It mostly is, and where it counts. But over time will be brought fully in line, and intentional
+##	        exceptions will be documented (what & why).
 
 ##	Purpose .............: See fAbout().
 ##	Args ................: See fSyntax().

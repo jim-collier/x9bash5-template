@@ -18,7 +18,6 @@
 ## shellcheck disable=2162  ## 'read without -r will mangle backslashes.'
 ## shellcheck disable=2181  ## 'Check exit code directly, not indirectly with $?.'
 
-
 ##	Github home for template+library ......: https://github.com/jim-collier/x9bash5-template/
 ##		Changelog .........................: https://github.com/jim-collier/bash-5-ultimate-guide/blob/main/CHANGELOG.md
 ##		Remaining to-do ...................: https://github.com/jim-collier/x9bash5-template/blob/main/TODO.md
@@ -26,7 +25,6 @@
 ##		Note: This template is not yet 100% in line with either the style nor performance parts of the guide.
 ##		      It mostly is, and where it counts. But over time will be brought fully in line, and intentional
 ##		      exceptions will be documented (what & why).
-
 
 ##	Purpose .............: See fAbout().
 ##	Args ................: See fSyntax().
@@ -41,6 +39,7 @@ declare -r  runAsOtherUser=""                  ## E.g. sudo aka root, or another
 declare -r  templateVersion="v10.0.0-beta.1"   ## Template version, don't change.
 declare -r  templateCopyrightYear="2011-2025"  ## Template copyright year, don't change.
 declare -ri atLeastOneArgRequired=0
+declare -ri doDebug=0
 declare  -i doQuietly=0
 declare  -i doPromptToContinue=1
 
@@ -103,7 +102,7 @@ fInit(){
 	## Parse the args [only change $parseArgs_maxPositionalArgCount]
 	declare -ri parseArgs_maxPositionalArgCount=2  ## Variable expected by fParseArgs()
 	declare allArgsStr; declare -a allArgsArr
-	fParseArgs  "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}"
+	fParseArgs  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
 	declare -r allArgsStr; declare -ar allArgsArr
 
 	## Arg validation and normalization
@@ -112,7 +111,7 @@ fInit(){
 #	declare    floatArg ; fGetNum  floatArg  "${arg_floatArg}"  0
 
 	## Get logging filespec (without yet creating it)
-	declare logFilespec # ; fLog_GetFilespec logFilespec
+	declare logFilespec="" # ; fLog_GetFilespec logFilespec
 
 #	#DEBUG
 #	echo -e "\${allArgsArr[*]} ...: '${allArgsArr[*]}'"
@@ -147,7 +146,7 @@ fInit(){
 	fi
 
 	## Ready to go; call main function with fully-validate variables.
-	fRunFunctionAs  "${runAsOtherUser}"  fMain  "${logFilespec}"  "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}"
+	fRunFunctionAs  "${runAsOtherUser}"  fMain  "${logFilespec}"  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
 
 }
 
@@ -161,9 +160,9 @@ fMain(){
 	## There can be up to 32 args beyond OG user name, home, and log filespec (the latter which may be null).
 
 	## Args; fRunFunctionAs() always passes OG username and userhome as first two params. fInit() usually passes logfilespec as third.
-	declare -r origUserName="$1" ; shift || true
-	declare -r origUserHome="$1" ; shift || true
-	declare -r logFilespec="$1"  ; shift || true
+	declare -r origUserName="${1:-}" ; shift || true
+	declare -r origUserHome="${1:-}" ; shift || true
+	declare -r logFilespec="${1:-}"  ; shift || true
 	[[ "${origUserName}" != "${USER}" ]] && { declare tmpStr; fTernaryStr  tmpStr  "root"  "${USER}"  "Now running as"  " root"  " user '${USER}'"  "."; fEcho "${tmpStr}"; }
 
 
@@ -185,8 +184,9 @@ fParseArgs(){
 	allArgsStr=""
 	allArgsArr=()
 	## Store the highest non-empty argument number.
-	for ((i=1; i<=maxPracticalArgCount; i++)); do [[ -n "${!i}" ]] && totalArgCount=$i; done
-	local -r -i totalArgCount=$totalArgCount
+	local -i i; i=0
+	for ((i=1; i<=maxPracticalArgCount; i++)); do [[ -n "${!i:-}" ]] && totalArgCount=$i; done
+	local -ri totalArgCount=$totalArgCount
 	## Build args str and array, including empty args - up to the last non-empty arg.
 	local thisStr=""
 	for ((i=1; i<=totalArgCount; i++)); do
@@ -345,144 +345,343 @@ EOF_s7asw
 ##	  bottom of this section, up.
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 
-## Error messages
-declare -r errBadRef_Chg_AssArr="Calling function didn't pass a reference to an associative array variable (for in-place manipulation)."
-declare -r errBadRef_Chg_Array="Calling function didn't pass a reference to an array variable (for in-place manipulation)."
-declare -r errBadRef_Chg_Int="Calling function didn't pass a reference to an integer variable (for return value placement)."
-declare -r errBadRef_Chg_Str="Calling function didn't pass a reference to a string variable (for in-place value change)."
-declare -r errBadRef_Ret_Int="Calling function didn't pass a reference to an integer variable (for in-place value change)."
-declare -r errBadRef_Ret_Str="Calling function didn't pass a reference to a string variable (for return value placement)."
 
-##	Group purpose ....: Array to-and-from string variables or files.
-##	Input ............: [per-function]
-##	Function return...: >0 if error
-##	StdErr ...........: [if error]
-##	Other side-effects: Calling functions' arrays, string variables, or system files.
-##	Notes ............: Although conceptually cool in the context of Bash's limited array handling and lack of OO,
+##	Group purpose ....: Generic echo-related functions (minified).
+##	Can be deleted? ..: NO; not without also removing many generic functions and template code that relies on it.
+##	Statefulness .....: Trivial single global state. (Only for count of blank lines output.)
+##	Input ............:
+##	Function return...:
+##	Stdout ...........:
+##	StdErr ...........:
+##	Other side-effects:
+##	Notes ............: The most useful feature about this collection, is by default not redundantly echoing
+##	                    repeated blank lines - which is tedious logic to recreate for every script.
 ##	Dependents .......:
-##	Dependencies .....: fThrowError()
+##	Dependencies .....:
 ##	Unit tests passed :
-fArrayFromStr(){ :; }
-fArrayToStr(){ :; }
-fArrayFromFile(){ :; }
-fArrayToFile(){ :; }
+declare -i _wasLastEchoBlank=0
+fEcho_Clean(){
+	if   [[ -n "$*" ]]         ; then echo -e "$*"; _wasLastEchoBlank=0
+	elif ((!_wasLastEchoBlank)); then echo ""     ; _wasLastEchoBlank=1; fi }
+# shellcheck disable=2120  ## References arguments, but none are ever passed; Just because this library function isn't called here, doesn't mean it never will in other scripts.
+fEcho()                   { if [[ -n "$*" ]]; then fEcho_Clean "[ $* ]"; else fEcho_Clean ""; fi; }
+fEcho_Force()             { fEcho_ResetBlankCounter; fEcho "$*";                                  }
+fEcho_Clean_Force()       { fEcho_ResetBlankCounter; fEcho_Clean "$*";                            }
+fEchoVarAndVal()          { fEcho_Clean "${2}${1} = '${!1}'";                                     }
+fEcho_ResetBlankCounter(){ _wasLastEchoBlank=0;                                                  }
 
-##	Group purpose ....: Simulates database functions - under the hood, operating on calling functions' associative arrays.
-##	Input ............: [per-function]
-##	Function return...: Usually >0 if error
-##	StdErr ...........: [if error]
-##	Other side-effects: Calling functions' associative arrays, and in some cases variables to store results.
-##	Notes ............: Although conceptually cool in the context of Bash's limited array handling and lack of OO,
-##	                    this is all probably pretty slow. So maybe don't use this for performance-critical bottlenecks.
-##	                    (Line-delimited strings with tools like sed, awk, grep, and tr are usually the fastest for massive
-##	                    amounts of data. Or more natively, multiple arrays each representing a field, with matching integer
-##	                    indexes, would almost certainly be faster than this conceit.)
-##	Dependents .......: fInit() [in stock standard template]
-##	Dependencies .....: fThrowError()
-##	Unit tests passed : 20250710
-fRecord_Add(){ ## Add a new record.
-	declare -n  assArr_s7abk=$1  ## Arg: <REQUIRED>: Reference to associative array.
-	declare -i  newIdx=$2
-	[[ -z "${assArr_s7abk["_.LBound"]}" ]] && assArr_s7abk=( ["_.LBound"]=1  ["_.UBound"]=0  ["_.Cursor"]=0 )
-	newIdx=$((${assArr_s7abk["_.UBound"]} + 1))  ## Increment idx.
-	assArr_s7abk["_.UBound"]=$newIdx; }  ## set UBound to incremented idx.
-fRecord_FieldVal_Set(){ ## Adds idx.property=value to current record (i.e. idx of _.UBound)
-	declare -n  assArr_s7abj=$1
-	declare -r  arrProperty="$2"  setVal="$3"
-	declare -r  arrIdx="${assArr_s7abj["_.UBound"]}"
-	if [[ -z "${arrIdx}" ]]; then  fThrowError  "Associative array metadata '_.UBound' doesn't appear to be set for index '${arrIdx}'. [¢⍤Č웃]"  "${FUNCNAME[0]}"
-	else assArr_s7abj["${arrIdx}.${arrProperty}"]="${setVal}"; fi; }
-fRecord_FieldVal_Get(){ # Get value at current cursor, by named property.
-	declare -n varName_s7abv=$1
-	declare -n assArr_s7abv=$2
-	declare -r arrProperty="$3"
-	declare -i arrIdx ; fRecord_Get_Cursor  arrIdx  assArr_s7abv
-	fAssArr_GetVal  varName_s7abv  assArr_s7abv  $arrIdx  "${arrProperty}" ;}
-fRecord_FieldVal_Get_byEcho(){ # Get value at current cursor, by named property, and by echo.
-	declare -n  assArr_s7abo=$1
-	declare -r  arrProperty="$2"
-	declare     retVal
-	fRecord_FieldVal_Get retVal assArr_s7abo "${arrProperty}" ; echo -e "${retVal}" ;}
-fRecord_MoveFirst(){ declare -n assArr_s7abf=$1 ; assArr_s7abf["_.Cursor"]=${assArr_s7abf["_.LBound"]}; }
-fRecord_MoveLast(){  declare -n assArr_s7abg=$1 ; assArr_s7abg["_.Cursor"]=${assArr_s7abg["_.UBound"]}; }
-fRecord_MoveNext(){  declare -n assArr_s7ab0=$1 ; assArr_s7ab0["_.Cursor"]=$((${assArr_s7ab0["_.Cursor"]} + 1)); }
-fRecord_MovePrev(){  declare -n assArr_s7ab1=$1 ; assArr_s7ab1["_.Cursor"]=$((${assArr_s7ab1["_.Cursor"]} - 1)); }
-fRecord_isEOF(){
-	declare -n assArr_s7ab2=$1
-	declare -i uBound cCursor ; fRecord_Get_UBound  uBound  assArr_s7ab2 ; fRecord_Get_Cursor  cCursor assArr_s7ab2
-	[[ cCursor -gt uBound ]]; }
-fRecord_isBOF(){ #
-	declare -n assArr_s7ab3=$1
-	declare -i lBound cCursor ; fRecord_Get_LBound  lBound  assArr_s7ab3 ; fRecord_Get_Cursor  cCursor assArr_s7ab3
-	[[ cCursor -lt lBound ]]; }
-fRecord_isInBounds(){ declare -n varName_s7ac6=$1 ; ! fRecord_isBOF varName_s7ac6  &&  ! fRecord_isEOF varName_s7ac6 ; }
-fRecord_Get_LBound(){ #
-	declare -n  varName_s7a9r=$1
-	declare -n  assArr_s7a9r=$2
-	declare -r  retVal="${assArr_s7a9r["_.LBound"]}"
-	if [[ -z "${retVal}" ]]; then fThrowError  "Either the associative array hasn't been initialized yet with at least one call to fRecord_Add(), or the associative array itself isn't valid. [¢⍤āz]"  "${FUNCNAME[0]}"
-	else varName_s7a9r=$retVal; fi; }
-fRecord_Get_UBound(){ #
-	declare -n  varName_s7a9s=$1
-	declare -n  assArr_s7a9s=$2
-	declare -r  retVal="${assArr_s7a9s["_.UBound"]}"
-	if [[ -z "${retVal}" ]]; then  fThrowError  "Either the associative array hasn't been initialized yet with at least one call to fRecord_Add(), or the associative array itself isn't valid. [¢⍤āz]"  "${FUNCNAME[0]}"
-	else  varName_s7a9s=$retVal ; fi; }
-fRecord_Get_Cursor(){ #
-	declare -n  varName_s7a9t=$1
-	declare -n  assArr_s7a9t=$2
-	declare -r  retVal="${assArr_s7a9t["_.Cursor"]}"
-	if [[ -z "${retVal}" ]]; then  fThrowError  "Either the associative array hasn't been initialized yet with at least one call to fRecord_Add(), or the associative array itself isn't valid. [¢⍤āz]"  "${FUNCNAME[0]}"
-	else  varName_s7a9t=$retVal ; fi; }
 
-##	Group purpose ....: For specified associative arrays, appends from, or copies to, as second associative array.
-##	Input ............: [per-function]
-##	Function return...: >0 if error
-##	StdErr ...........: [if error]
-##	Other side-effects: Calling functions' associative arrays.
-##	Dependencies .....: fThrowError()
+##	Group purpose ....: Generic error-handling (minified).
+##	Can be deleted? ..: Generally not - without also removing many generic functions that rely on it.
+##	Statefulness .....: Single global state.
+##	Input ............:
+##	Function return...:
+##	Stdout ...........:
+##	StdErr ...........:
+##	Other side-effects:
+##	Notes ............:
+##	Dependents .......:
+##	Dependencies .....:
 ##	Unit tests passed :
-fAA_AppendFromSubAA(){ :; }  #TODO
-fAA_FilterToSubAA(){ :; }    #TODO
+declare -i _wasCleanupRun=0  ## Managed internally by this suite.
+declare -i _doExitOnThrow=0    ## Managed internally by this suite.
+declare -i _ErrVal=0         ## Set by this suite, but managed by calling functions. Think of it as an extended '$?' that doesn't immediately clear.
+_fSingleExitPoint(){
+	local -r signal="${1:-}"
+	local -r lineNum="${2:-}"
+	local -r exitCode="${3:-}"
+	local -r errMsg="${4:-}"
+	local -r errCommand="$BASH_COMMAND"
+	_ErrVal=$exitCode
+	if [[ "${signal}" == "INT" ]]; then
+		fEcho_Force
+		echo "User interrupted." >&2
+		fEcho_ResetBlankCounter
+		fCleanup  ## User cleanup
+		exit 1
+	elif [[ "${exitCode}" != "0" ]] && [[ "${exitCode}" != "1" ]]; then  ## Clunky string compare is less likely to fail than integer
+		fEcho_Clean
+		echo -e "Signal .....: '${signal}'"      >&2
+		echo -e "Err# .......: '${exitCode}'"    >&2
+		echo -e "Message ....: '${errMsg}'"      >&2
+		echo -e "At line# ...: '${lineNum}'"     >&2
+		echo -e "Command# ...: '${errCommand}'"  >&2
+		fEcho_Clean_Force
+		fCleanup  ## User cleanup
+	else
+		fCleanup  ## User cleanup
+	fi ;}
+_fTrap_Exit(){
+	if [[ "${_wasCleanupRun}" == "0" ]]; then  ## String compare is less to fail than integer
+		_wasCleanupRun=1
+		_fSingleExitPoint "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
+	fi ;}
+_fTrap_Error(){
+	if [[ "${_wasCleanupRun}" == "0" ]]; then  ## String compare is less to fail than integer
+		_wasCleanupRun=1
+		fEcho_ResetBlankCounter
+		_fSingleExitPoint "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
+	fi ;}
+_fTrap_Error_Ignore(){ _ErrVal=1; true;  return 0; }
+_fTrap_Error_Soft(){   _ErrVal=1; false; return 1; }
+fThrowError(){
+	local    errMsg="${1:-}"
+	local -r funcName="${2:-}"
+	local    meNameLocal="${meName}"
+	[[ -z "${errMsg}"      ]]                           && errMsg="An error occurred."
+#	[[ -z "${meNameLocal}" ]] && [[ -n "${funcName}" ]] && meNameLocal="${funcName}()"
+#	[[ -n "${meNameLocal}" ]] && [[ -n "${funcName}" ]] && meNameLocal="${meNameLocal}.${funcName}()"
+	[[ -n "${meNameLocal}" ]]                           && errMsg="${meNameLocal}: ${errMsg}"
+	local callStack=""
+	for (( i = 1; i < ${#FUNCNAME[@]}; i++ )); do
+		[[ "${FUNCNAME[i]}" == "main" ]] && continue
+		[[ -n "${callStack}" ]] && callStack="${callStack}, "
+		callStack="${callStack}${FUNCNAME[i]}()"
+	done
+	[[ -n "${callStack}" ]] && callStack="Reverse call stack: ${callStack}"
+	fEcho_Clean
+	echo -e  "${errMsg}"     >&2
+	echo -e  "${callStack}"  >&2
+	fEcho_ResetBlankCounter
+	_ErrVal=1
+	{ ((_doExitOnThrow)) && exit 1; } || return 1; }
+fDefineTrap_Error_Fatal(){        :; _ErrVal=0; _doExitOnThrow=1; trap '_fTrap_Error         ERR    ${LINENO}  $?  $_' ERR; set -e; } ## Standard; exits script on any caught error; but 'set -e' has known inconsistencies catching or ignoring errors.
+fDefineTrap_Error_ExitOnThrow(){  :; _ErrVal=0; _doExitOnThrow=1; trap '_fTrap_Error         ERR    ${LINENO}  $?  $_' ERR; set +e; } ## Only exits script on fThrowError().
+fDefineTrap_Error_Soft(){         :; _ErrVal=0; _doExitOnThrow=0; trap '_fTrap_Error_Soft    ERR    ${LINENO}  $?  $_' ERR; set -e; } ## Returns error code of 1 on error.
+fDefineTrap_Error_Ignore(){       :; _ErrVal=0; _doExitOnThrow=0; trap '_fTrap_Error_Ignore  ERR    ${LINENO}  $?  $_' ERR; set +e; } ## Eats errors and returns true.
+fDefineTrap_Error_Fatal
+trap '_fTrap_Error SIGHUP  ${LINENO} $? $_' SIGHUP
+trap '_fTrap_Error SIGINT  ${LINENO} $? $_' SIGINT    ## CTRL+C
+trap '_fTrap_Error SIGTERM ${LINENO} $? $_' SIGTERM
+trap '_fTrap_Exit  EXIT    ${LINENO} $? $_' EXIT
+trap '_fTrap_Exit  INT     ${LINENO} $? $_' INT
+trap '_fTrap_Exit  TERM    ${LINENO} $? $_' TERM
 
-##	Group purpose ....: Lighter-weight wrappers for Bash associative arrays. Unlike fRecord_*, don't try to abstract
-##	                    too much away. You are still free to loop over and access the array directly. The only idea
-##	                    it keeps from fRecord_*, is the idea of per-array metadata like '_.LBound' and '_.UBound'.
-##	Input ............: [per-function]
-##	Function return...: Usually >0 if error
-##	StdErr ...........: [if error]
-##	Other side-effects: Calling functions' associative arrays, and in some cases variables to store results.
-##	Notes ............: Although conceptually cool in the context of Bash's limited array handling and lack of OO,
-##	                    this is all probably pretty slow. So maybe don't use this for performance-critical bottlenecks.
-##	                    (Line-delimited strings with tools like sed, awk, grep, and tr are usually the fastest for massive
-##	                    amounts of data. Or more natively, multiple arrays each representing a field, with matching integer
-##	                    indexes, would almost certainly be faster than this conceit.)
-##	Dependents .......: fInit() [in stock standard template]
-##	Dependencies .....: fThrowError(), fAA_AppendFromSubAA(), fAA_FilterToSubAA()
+
+##	Group purpose ....: Generic logging (minified).
+##	Can be deleted? ..: Yes. The only default template occurrence an fInit() is commented out.
+##	Statefulness .....: Single global state.
+##	Input ............:
+##	Function return...:
+##	Stdout ...........:
+##	StdErr ...........:
+##	Other side-effects:
+##	Notes:
+##		You can also write directly to log file yourself at any time after fLog_Init() or first fLog_Line() or fLog_Pipe(), and/or 'mv' the file after fLog_Cleanup().
+##			The only 'required' function you need to call for logging:
+##				fLog_Line()   E.g.: fLog_Line "Hello"
+##			Or for continuous streamed logging (even from function output):
+##				fLog_Pipe()   E.g.: fMyFunctionOrCommand | fLog_Pipe
+##			Other functions you can *optionally* invoke:
+##				fLog_GetFilespec() ................: If you want to know what the log filespec will be, before it's created.
+##				fLog_Init() .......................: If you want to explicitly init the logfile, but is not necessary.
+##				fLog_Cleanup() ....................: Not strictly necessary if you don't run as root, as it only updates file permissions to OG user.
+##	Dependents .......:
+##	Dependencies .....:
 ##	Unit tests passed :
-fAssArr_AddIdx(){ ## Add a new record.
-	[[ -v $1 ]] || fThrowError "${errBadRef_Chg_AssArr} [¢⍩fP]"  "${FUNCNAME[0]}" ; declare -n  assArr_s7abk=$1  ## Arg: <REQUIRED>: Associative array.
-	[[ -v $2 ]] || fThrowError "${errBadRef_Ret_Int} [¢⍩fS]"     "${FUNCNAME[0]}" ; declare -n  newIdx_s7agn=$2  ## Arg: <REQUIRED>: New integer index return value.
-	[[ -z "${assArr_s7abk["_.LBound"]}" ]] && assArr_s7abk=( ["_.LBound"]=1  ["_.UBound"]=0  ["_.Cursor"]=0 )
-	newIdx_s7agn=$((${assArr_s7abk["_.UBound"]} + 1))  ## Increment idx.
-	assArr_s7abk["_.UBound"]=$newIdx_s7agn; }  ## set UBound to incremented idx.
-fAssArr_SetVal(){ #
-	declare -n  assArr_s7abl=$1
-	declare -ri arrIdx=$2
-	declare -r  arrProperty="$3"
-	declare -r  setVal="$4"
-	assArr_s7abl["${arrIdx}.${arrProperty}"]="${setVal}" ;}
-fAssArr_GetVal(){ #
-	declare -n  varName_s7a8g=$1
-	declare -n  assArr_s7abm=$2
-	declare -ri arrIdx=$3
-	declare -r  arrProperty="$4"
-	declare -r  arrKey="${arrIdx}.${arrProperty}"
-	if [[ "${assArr_s7abm["${arrKey}"]+isset}" != "isset" ]]; then  fThrowError  "Either the key '${arrKey}' - or the associative array itself - doesn't exist. [¢⍤āᚠ]"  "${FUNCNAME[0]}"
-	else  varName_s7a8g="${assArr_s7abm["${arrKey}"]}"; fi ;}
-fAssArr_GetSubAssArr_Idx(){ :; }  #TODO
-fAssArr_SetSubAssArr_Idx(){ :;}  #TODO
-fAssArr_Delete_Idx(){ :; }        #TODO
+declare -r -i maxLogfiles=10
+declare -r -i removeNullFilesNMinutesOld=1
+readonly      defaultLogMiddleSubdirs="var/log"
+declare       _vLog_Dir=""  _vLog_Filename=""  _vLog_Filespec=""  _vLog_WiledcardSpec=""  _vLog_Owner=""
+declare -i    _vLog_DidInitVars=0  _vLog_DidInitFsObjs=0
+fLog_GetFilespec(){
+	##	Purpose: Initializes everything and gives you the log filespec, without actually creating anything yet.
+	##	Args:
+	##		1 [REQUIRED]: varName      The variable to populate.
+	##		2 [optional]: LogDir       If not specified, defaults to "$(fGetOgUserHome)/var/log/${meName}"
+	##		3 [optional]: logFileName  If NOT specified, logfile rotation will work, and defaults to "${meName}_${serialDT}.log"
+	##		4 [optional]: Username for ownership and/or homedir calculation
+	##	Dependencies: fGetOgUserName(), fGetOgUserHome(), __pLog_InitVars()
+	local -n refVar=$1 ; shift || true
+	__pLog_InitVars  "${1:-}"  "${2:-}"  "${3:-}"
+	refVar="${_vLog_Filespec}" ;:;}
+fLog_Init(){
+	##	Optional args:
+	##		1: LogDir       If not specified, defaults to "$(fGetOgUserHome)/var/log/${meName}"
+	##		2: logFileName  If NOT specified, logfile rotation will work, and defaults to "${meName}_${serialDT}.log"
+	##		3: Username for ownership and/or homedir calculation
+	##	Dependencies: fRemoveOldLogs(), __pLog_InitVars()
+	((_vLog_DidInitFsObjs)) && return 0
+	__pLog_InitVars  "${1:-}"  "${2:-}"  "${3:-}"
+	if [[ ! -d "${_vLog_Dir}" ]]; then
+		mkdir -p "${_vLog_Dir}"
+		[[ "root" == "${USER,,}" ]] && chown ${_vLog_Owner}:${_vLog_Owner} "${_vLog_Dir}"
+	fi
+	[[ -n "${_vLog_WiledcardSpec}" ]] && fRemoveOldLogs  "${_vLog_Dir}"  "${_vLog_WiledcardSpec}"  $((maxLogfiles - 1))  $removeNullFilesNMinutesOld
+	touch "${_vLog_Filespec}"
+	_vLog_DidInitFsObjs=1 ;:;}
+fLog_Line(){
+	{ ((! _vLog_DidInitFsObjs)) || [[ -z "${_vLog_Filespec}" ]] || [[ ! -f "${_vLog_Filespec}" ]]; } && fLog_Init
+	echo -e "$(date "+%Y%m%d-%H%M%S")  $1" >> "${_vLog_Filespec}" ;:;}
+fLog_Pipe(){  ## Put this function after a pipe, to log all output of a command.
+	{ ((! _vLog_DidInitFsObjs)) || [[ -z "${_vLog_Filespec}" ]] || [[ ! -f "${_vLog_Filespec}" ]]; } && fLog_Init
+	while IFS= read -r nextLine; do echo -e "$(date "+%Y%m%d-%H%M%S")  ${nextLine}" >> "${_vLog_Filespec}"; done ;:;}
+fLog_Cleanup(){  ## Call after done logging, to clean-up log file permissions.
+	((! _vLog_DidInitFsObjs)) && fThrowError  "Log cleanup called but has not been initialized."  "${FUNCNAME[0]}"
+	[[ "root" == "${USER,,}" ]] && chown ${_vLog_Owner}:${_vLog_Owner} "${_vLog_Filespec}" ;:;}
+fLog_Reset(){ _vLog_Dir="" ; _vLog_Filename="" ; _vLog_Filespec="" ; _vLog_WiledcardSpec="" ; _vLog_Owner="" ; _vLog_DidInitVars=0 ; _vLog_DidInitFsObjs=0 ;:;}
+fRemoveOldLogs(){
+	##  Removes old [and optionally empty] log files.
+	##	Used by: _fLog_Init()
+	##	Example: fRemoveOldLogs  "${HOME}/var/log/$(basename "${0}")"  "$(basename "${0}")_*.log"  10  1
+	local -r basePath="${1:-}"                   ## Arg <REQUIRED>: Folder where logfiles go.
+	local -r wildcardFilespec="${2:-}"             ## Arg <REQUIRED>: A filename with at least one required embedded POSIX wildcard in the string (NOT at the shell expansion level). This is to old logs can be deleted.
+	local    keepNewestNlogs=$3                ## Arg [optional]: Number of newest log files to keep. Defaults to $default_keepNewestNlogs
+	local    removeNullsThisMinutesOrOlder=$4  ## Arg [optional]: Remove empty files this many minutes or older. 0 to disable.
+	## Arg4: Remove 0-byte matches older than N > 0 minutes old. (Default = 0 which means DISABLE this action.
+	local -ri default_keepNewestNlogs=10
+	local -ri default_removeNullsThisMinutesOrOlder=$((60*24))
+	local -r  safetyCheck_Arg1MustContain="[^a-z0-9](log|archive|old|bak|backup|delete|zip|7z|tar|gz|tgz|xz|bz2|zst)"
+	[[   -z "${basePath}" ]] && fThrowError  "The first argument to this function must be a valid folder to rotate logs in."  "${FUNCNAME[0]}"
+	[[ ! -d "${basePath}" ]] && fThrowError  "The first argument to this function (the folder to rotate logs in) doesn't seem to exist: '${basePath}'."  "${FUNCNAME[0]}"
+	[[ "/" == "$(realpath "${basePath}")" ]] && fThrowError  "For safety purposes, the first argument to this function (the folder to rotate logs in '${basePath}') cannot be the root directory."  "${FUNCNAME[0]}"
+	[[ -z "${wildcardFilespec}" ]] && fThrowError  "The second argument to this function must be a single file name, with at least one POSIX wildcard character embedded in the string (rather than shell expansion variables)."  "${FUNCNAME[0]}"
+	grep -Pq '[*?\[\]]' <<< "${wildcardFilespec}" || fThrowError  "The second argument to this function (log filespec '${wildcardFilespec}') must have at least one POSIX wildcard expression embedded in the string, e.g.: *, ?, []."  "${FUNCNAME[0]}"
+	local -r fullPathspec="$(realpath "${basePath}")/${wildcardFilespec}"
+	grep -iPq "${safetyCheck_Arg1MustContain}" <<< "${fullPathspec}" || fThrowError "For safety purposes, as a crude check against potential massive accidental deletion, the full path/file spec sent to this function must satisfy the following regex: '${safetyCheck_Arg1MustContain}', but doesn't: '${fullPathspec}'."  "${FUNCNAME[0]}"
+	[[ -n "${keepNewestNlogs}" ]] && [[ ! "${keepNewestNlogs}" =~ ^[0-9]$ ]] && fThrowError  "The third argument to this function ('keep newest N logs'), must be an integer, but got '${keepNewestNlogs}' instead."  "${FUNCNAME[0]}"
+	[[ -z "${keepNewestNlogs}" ]] && keepNewestNlogs=${default_keepNewestNlogs}
+	local -ir keepNewestNlogs=$keepNewestNlogs
+	[[ -n "${removeNullsThisMinutesOrOlder}" ]] && [[ ! "${removeNullsThisMinutesOrOlder}" =~ ^[0-9]$ ]] && fThrowError  "The fourth argument to this function ('remove null files N minutes or older'), must be an integer >=0, but got '${removeNullsThisMinutesOrOlder}' instead."  "${FUNCNAME[0]}"
+	[[ -z "${removeNullsThisMinutesOrOlder}" ]] && removeNullsThisMinutesOrOlder=$default_removeNullsThisMinutesOrOlder
+	local -ir removeNullsThisMinutesOrOlder=$removeNullsThisMinutesOrOlder
+	local useRemoveProgram="rm" ; [[ -z "$(which trash 2>/dev/null || true)" ]] && useRemoveProgram="trash"; local -r useRemoveProgram="${useRemoveProgram}"
+	find "${basePath}" -maxdepth 1 -type f -name "${wildcardFilespec}" -printf '%T@ %p\0' | sort -z -n | head -z -n "-${keepNewestNlogs}" | cut -z -d' ' -f2- | xargs -0 -r "${useRemoveProgram}"
+	if ((removeNullsThisMinutesOrOlder > 0)); then
+		find "${basePath}" -maxdepth 1 -type f -name "${wildcardFilespec}" -empty -mmin +${removeNullsThisMinutesOrOlder} -delete
+	fi
+	:;}
+__pLog_InitVars(){
+	##	Used by: fLog_Init(), fLog_GetFilespec()
+	((_vLog_DidInitVars)) && return 0
+	local logDir="${1:-}"
+	local logFileName="${2:-}"
+	local userName="${3:-}"
+	[[ -z "${userName}" ]] && fGetOgUserName userName
+	_vLog_Owner="${userName}"
+	if [[ -z "${logDir}"  ]]; then
+		local userHome=""; fGetOgUserHome userHome "${userName}"; local -r userHome="${userHome}"
+		logDir="${userHome}/${defaultLogMiddleSubdirs}/${meName}"
+	fi
+	_vLog_Dir="${logDir}"
+	local _vLog_WiledcardSpec=""
+	if [[ -z "${logFileName}" ]]; then
+		logFileName="${meName}_${serialDT}.log"
+		_vLog_WiledcardSpec="${meName}_*.log"
+	fi
+	_vLog_Filename="${logFileName}"
+	_vLog_Filespec="${_vLog_Dir}/${_vLog_Filename}"
+	_vLog_DidInitVars=1 ;:;}
+
+
+##	Group purpose ....: Generic unit-testing (minified).
+##	Can be deleted? ..: Yes. External unit-test scripts will break, but not this script.
+##	Statefulness .....: Stateless.
+##	Input ............:
+##	Function return...:
+##	Stdout ...........:
+##	StdErr ...........:
+##	Other side-effects:
+##	Notes ............:
+##	Dependents .......:
+##	Dependencies .....:
+##	Unit tests passed :
+declare __vAllTestIDs=""
+fUnitTest_PrintSectionHeader(){
+	fEcho_Clean; fEcho_Clean "•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
+	if [[ -n "${1:-}" ]]; then
+		fEcho_Clean "Unit test section: ${1:-}"
+		fEcho_Clean "•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
+	fi ;:;}
+fAssert_AreEqual(){
+	local -r testID="${1:-}"            ## Arg [optional]: Unique test ID, e.g. muid1.
+	local -r testVal="${2:-}"           ## Arg <REQUIRED>: Test val, e.g. from output of a command.
+	local -r expectVal="${3:-}"         ## Arg <REQUIRED>: Expected val.
+	local -r addComment="${4:-}"        ## Arg [optional]: Brief comment to include in output.
+	local    outputStr=""
+	if [[ -n "${testID}" ]]; then
+		[[ "${__vAllTestIDs}" == *"y${testID}z"* ]] && fThrowError  "Unique test ID has been used already: '${testID}'."  "${FUNCNAME[0]}"
+		__vAllTestIDs="${__vAllTestIDs}y${testID}z"
+	fi
+	if [[ "${testVal}" == "${expectVal}" ]]; then
+		outputStr="Assertion ID '${testID}': Pass, test and expected values are the same: '${testVal}'"
+	else
+		outputStr="Assertion ID '${testID}': **FAIL**, test and expected values are NOT the same; '${testVal}' != '${expectVal}'."
+	fi
+	[[ -n "${addComment}" ]] && outputStr="${outputStr}  [${addComment}]"
+	fEcho_Clean "${outputStr}"
+	:;}
+fAssert_AreNotEqual(){
+	local -r testID="${1:-}"            ## Arg [optional]: Unique test ID, e.g. muid1.
+	local -r testVal="${2:-}"           ## Arg <REQUIRED>: Test val, e.g. from output of a command.
+	local -r expectWrongVal="${3:-}"    ## Arg <REQUIRED>: Expected wrong val.
+	local -r addComment="${4:-}"        ## Arg [optional]: Brief comment to include in output.
+	local    outputStr=""
+	if [[ -n "${testID}" ]]; then
+		[[ "${__vAllTestIDs}" == *"y${testID}z"* ]] && fThrowError  "Unique test ID has been used already: '${testID}'."  "${FUNCNAME[0]}"
+		__vAllTestIDs="${__vAllTestIDs}y${testID}z"
+	fi
+	if [[ "${testVal}" != "${expectWrongVal}" ]]; then
+		outputStr="Assertion ID '${testID}': Pass, test and expected incorrect value are the not the same; '${testVal}' != '${expectWrongVal}'."
+	else
+		outputStr="Assertion ID '${testID}': **FAIL**, test and expected values ARE the same: '${testVal}'"
+	fi
+	[[ -n "${addComment}" ]] && outputStr="${outputStr}  [${addComment}]"
+	fEcho_Clean "${outputStr}"
+	:;}
+fAssert_Eval_AreEqual(){
+	local -r testID="${1:-}"            ## Arg [optional]: Unique test ID, e.g. muid1.
+	local -r expressionToEval="${2:-}"  ## Arg <REQUIRED>: Exression to evaluate.
+	local -r expectVal="${3:-}"         ## Arg <REQUIRED>: Expected val.
+	local -r addComment="${4:-}"        ## Arg [optional]: Brief comment to include in output.
+	fAssert_AreEqual  "${testID}"  "$(eval "${expressionToEval}")"  "${expectVal}"  "${addComment}";:;}
+fAssert_Eval_ShouldError(){
+	local -r testID="${1:-}"            ## Arg [optional]: Unique test ID, e.g. muid1.
+	local -r expressionToEval="${2:-}"  ## Arg <REQUIRED>: Exression to evaluate.
+	local -r addComment="${3:-}"        ## Arg [optional]: Brief comment to include in output.
+	local -i returnCode=0
+	local    outputStr=""
+	if [[ -n "${testID}" ]]; then
+		[[ "${__vAllTestIDs}" == *"y${testID}z"* ]] && fThrowError  "Unique test ID has been used already: '${testID}'."  "${FUNCNAME[0]}"
+		__vAllTestIDs="${__vAllTestIDs}y${testID}z"
+	fi
+	fDefineTrap_Error_Ignore
+		_ErrVal=0
+		eval "${expressionToEval}" &>/dev/null
+		returnCode=${_ErrVal}
+	fDefineTrap_Error_Fatal
+	if ((returnCode > 0)); then
+		outputStr="Assertion ID '${testID}': Pass, function errored as predicted."
+	else
+		outputStr="Assertion ID '${testID}': **FAIL**, function did not error as predicted."
+	fi
+	[[ -n "${addComment}" ]] && outputStr="${outputStr}  [${addComment}]"
+	fEcho_Clean "${outputStr}"
+	:;}
+fAssert_Eval_ShouldNotError(){
+	local -r testID="${1:-}"            ## Arg [optional]: Unique test ID, e.g. muid1.
+	local -r expressionToEval="${2:-}"  ## Arg <REQUIRED>: Exression to evaluate.
+	local -r addComment="${3:-}"        ## Arg [optional]: Brief comment to include in output.
+	local -i returnCode=0
+	local    outputStr=""
+	if [[ -n "${testID}" ]]; then
+		[[ "${__vAllTestIDs}" == *"y${testID}z"* ]] && fThrowError  "Unique test ID has been used already: '${testID}'."  "${FUNCNAME[0]}"
+		__vAllTestIDs="${__vAllTestIDs}y${testID}z"
+	fi
+	fDefineTrap_Error_Ignore
+		_ErrVal=0
+		eval "${expressionToEval}" &>/dev/null
+		returnCode=${_ErrVal}
+	fDefineTrap_Error_Fatal
+	if ((returnCode == 0)); then
+		outputStr="Assertion ID '${testID}': Pass, function succeeded as predicted."
+	else
+		outputStr="Assertion ID '${testID}': **FAIL**, function errored."
+	fi
+	[[ -n "${addComment}" ]] && outputStr="${outputStr}  [${addComment}]"
+	fEcho_Clean "${outputStr}"
+	:;}
+
 
 ##	Group purpose ....: Adds expected script dependencies to an array one-at-a-time, then validates them all at once. (To avoid
 ##	                    bothering the user with the ol' one-at-a-time dependency-fix/more-errors annoyance.)
@@ -499,9 +698,9 @@ fAssArr_Delete_Idx(){ :; }        #TODO
 declare -gA __pDependencies_Array
 declare -gi __pDependencies_HighestIndex=0
 fDependencies_Add(){ #
-	declare -r  commandThatShouldBeInPath="$1"  ## Arg <REQUIRED>: A command/program that should be in the path.
-	declare -r  howToGet="$2"                   ## Arg [optional]: How to obtain it if it's not.
-	declare -r  arg_isSuggestionOnly="$3"       ## Arg [optional]: 0=required (default), 1=suggestion-only, that will only be seen if another required one isn't met.
+	declare -r  commandThatShouldBeInPath="${1:-}"  ## Arg <REQUIRED>: A command/program that should be in the path.
+	declare -r  howToGet="${2:-}"                   ## Arg [optional]: How to obtain it if it's not.
+	declare -r  arg_isSuggestionOnly="${3:-}"       ## Arg [optional]: 0=required (default), 1=suggestion-only, that will only be seen if another required one isn't met.
 	declare -i  isSuggestionOnly ; fGetBool  isSuggestionOnly  "${arg_isSuggestionOnly}"  0
 	[[ -z "${commandThatShouldBeInPath}" ]] && fThrowError  "No path program specified to add to dependencies checker."  "${FUNCNAME[0]}"
 	fRecord_Add          __pDependencies_Array  ## Note: Read function block header comment for why we're going rediculously overboard with fRecord_*() instead of ultra-simple text variable handling.
@@ -510,7 +709,7 @@ fDependencies_Add(){ #
 	fRecord_FieldVal_Set __pDependencies_Array  "IsSuggestionOnly"   $isSuggestionOnly
 	fRecord_FieldVal_Set __pDependencies_Array  "Pathspec"          "$(which "${commandThatShouldBeInPath}" 2>/dev/null || true)"; }
 fDependencies_Validate(){ #
-	declare progName warningList errList tmpStr
+	declare progName warningList errList="" tmpStr
 	fRecord_MoveFirst  __pDependencies_Array
 	while fRecord_isInBounds __pDependencies_Array; do
 		fRecord_FieldVal_Get  progName  __pDependencies_Array  "Program"
@@ -550,25 +749,157 @@ fDependencies_GetCount_Required_byEcho(){
 ##	Dependencies .....: fGetOgUserName(), fGetOgUserHome(), fIsFunction()
 ##	Unit tests passed : 20250709-203343
 fRunFunctionAs(){ #
-	declare    runAs="$1"
-	declare -r functionName="$2"
+	declare    runAs="${1:-}"
+	declare -r functionName="${2:-}"
 	{ fIsRegexMatch  "${runAs}"  '^(|sudo|root)$' || fIsUser "${runAs}"; } || fThrowError  "Not a know user: '${runAs}'"  "${FUNCNAME[0]}"
 	fIsFunction "${functionName}" || fThrowError  "Not a valid defined function in this script: '${functionName}'"  "${FUNCNAME[0]}"
 	declare ogUserName; fGetOgUserName ogUserName
 	declare ogUserHome; fGetOgUserHome ogUserHome
 	if [[ -z "${runAs}" ]] || [[ "${runAs}" == "${USER}" ]]; then
 		## We are already running as defined user (possibly sudo or even self), so invoke function directly.
-		$functionName "${ogUserName}"  "${ogUserHome}"  "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}"
+		$functionName "${ogUserName}"  "${ogUserHome}"  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
 	elif fIsRegexMatch "${runAs}" '^root|sudo$'; then
 		## We need to run as sudo but currently aren't; so relaunch script via sudo; function will be called via routing control at the bottom of this script.
 		((! doQuietly)) && sudo echo "[ Re-launching to run function '${functionName}()' as sudo ... ]"
-		sudo "${mePath}" "REENTRANT_${reentrantKey}"  "${functionName}"  "${ogUserName}"  "${ogUserHome}"  "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}"  "${29}" "${30}" "${31}" "${32}"
+		sudo "${mePath}" "REENTRANT_${reentrantKey}"  "${functionName}"  "${ogUserName}"  "${ogUserHome}"  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
 	else
 		## We need to run as a different user but currently aren't; so relaunch script via sudo; function will be called via routing control at the bottom of this script.
 		((! doQuietly)) && sudo echo "[ Re-launching to run function '${functionName}()' as user '${runAs}' ... ]"
-	#	sudo -u $runAs -i "${mePath}" "REENTRANT_${reentrantKey}"  "${functionName}"  "${ogUserName}"  "${ogUserHome}"  "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}"  "${29}" "${30}" "${31}" "${32}"
-		sudo -u $runAs "${mePath}" "REENTRANT_${reentrantKey}"  "${functionName}"  "${ogUserName}"  "${ogUserHome}"  "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}"  "${29}" "${30}" "${31}" "${32}"
+	#	sudo -u $runAs -i "${mePath}" "REENTRANT_${reentrantKey}"  "${functionName}"  "${ogUserName}"  "${ogUserHome}"  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
+		sudo -u $runAs "${mePath}" "REENTRANT_${reentrantKey}"  "${functionName}"  "${ogUserName}"  "${ogUserHome}"  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
 	fi ;:;}
+
+
+##	Group purpose ....: Error message constants
+##	Can be deleted? ..: Not without also removing dependents.
+##	Dependents .......: fAssArr_*()
+declare -r errBadRef_Chg_AssArr="Calling function didn't pass a reference to an associative array variable (for in-place manipulation)."
+declare -r errBadRef_Chg_Array="Calling function didn't pass a reference to an array variable (for in-place manipulation)."
+declare -r errBadRef_Chg_Int="Calling function didn't pass a reference to an integer variable (for return value placement)."
+declare -r errBadRef_Chg_Str="Calling function didn't pass a reference to a string variable (for in-place value change)."
+declare -r errBadRef_Ret_Int="Calling function didn't pass a reference to an integer variable (for in-place value change)."
+declare -r errBadRef_Ret_Str="Calling function didn't pass a reference to a string variable (for return value placement)."
+
+
+##	Group purpose ....: Simulates database functions - under the hood, operating on calling functions' associative arrays.
+##	Input ............: [per-function]
+##	Function return...: Usually >0 if error
+##	StdErr ...........: [if error]
+##	Other side-effects: Calling functions' associative arrays, and in some cases variables to store results.
+##	Notes ............: Although conceptually cool in the context of Bash's limited array handling and lack of OO,
+##	                    this is all probably pretty slow. So maybe don't use this for performance-critical bottlenecks.
+##	                    (Line-delimited strings with tools like sed, awk, grep, and tr are usually the fastest for massive
+##	                    amounts of data. Or more natively, multiple arrays each representing a field, with matching integer
+##	                    indexes, would almost certainly be faster than this conceit.)
+##	Dependents .......: fInit() [in stock standard template]
+##	Dependencies .....: fThrowError()
+##	Unit tests passed : 20250710
+fRecord_Add(){ ## Add a new record.
+	declare -n  assArr_s7abk=$1  ## Arg: <REQUIRED>: Reference to associative array.
+	declare -i  newIdx=${2:-0}
+	[[ -z "${assArr_s7abk["_.LBound"]:-}" ]] && assArr_s7abk=( ["_.LBound"]=1  ["_.UBound"]=0  ["_.Cursor"]=0 )
+	newIdx=$((${assArr_s7abk["_.UBound"]} + 1))  ## Increment idx.
+	assArr_s7abk["_.UBound"]=$newIdx; }  ## set UBound to incremented idx.
+fRecord_FieldVal_Set(){ ## Adds idx.property=value to current record (i.e. idx of _.UBound)
+	declare -n  assArr_s7abj=$1
+	declare -r  arrProperty="${2:-}"  setVal="${3:-}"
+	declare -r  arrIdx="${assArr_s7abj["_.UBound"]}"
+	if [[ -z "${arrIdx}" ]]; then  fThrowError  "Associative array metadata '_.UBound' doesn't appear to be set for index '${arrIdx}'. [¢⍤Č웃]"  "${FUNCNAME[0]}"
+	else assArr_s7abj["${arrIdx}.${arrProperty}"]="${setVal}"; fi; }
+fRecord_FieldVal_Get(){ # Get value at current cursor, by named property.
+	declare -n varName_s7abv=$1
+	declare -n assArr_s7abv=$2
+	declare -r arrProperty="${3:-}"
+	declare -i arrIdx ; fRecord_Get_Cursor  arrIdx  assArr_s7abv
+	fAssArr_GetVal  varName_s7abv  assArr_s7abv  $arrIdx  "${arrProperty}" ;}
+fRecord_FieldVal_Get_byEcho(){ # Get value at current cursor, by named property, and by echo.
+	declare -n  assArr_s7abo=$1
+	declare -r  arrProperty="${2:-}"
+	declare     retVal
+	fRecord_FieldVal_Get retVal assArr_s7abo "${arrProperty}" ; echo -e "${retVal}" ;}
+fRecord_MoveFirst(){ declare -n assArr_s7abf=$1 ; assArr_s7abf["_.Cursor"]=${assArr_s7abf["_.LBound"]}; }
+fRecord_MoveLast(){  declare -n assArr_s7abg=$1 ; assArr_s7abg["_.Cursor"]=${assArr_s7abg["_.UBound"]}; }
+fRecord_MoveNext(){  declare -n assArr_s7ab0=$1 ; assArr_s7ab0["_.Cursor"]=$((${assArr_s7ab0["_.Cursor"]} + 1)); }
+fRecord_MovePrev(){  declare -n assArr_s7ab1=$1 ; assArr_s7ab1["_.Cursor"]=$((${assArr_s7ab1["_.Cursor"]} - 1)); }
+fRecord_isEOF(){
+	declare -n assArr_s7ab2=$1
+	declare -i uBound cCursor ; fRecord_Get_UBound  uBound  assArr_s7ab2 ; fRecord_Get_Cursor  cCursor assArr_s7ab2
+	[[ cCursor -gt uBound ]]; }
+fRecord_isBOF(){ #
+	declare -n assArr_s7ab3=$1
+	declare -i lBound cCursor ; fRecord_Get_LBound  lBound  assArr_s7ab3 ; fRecord_Get_Cursor  cCursor assArr_s7ab3
+	[[ cCursor -lt lBound ]]; }
+fRecord_isInBounds(){ declare -n varName_s7ac6=$1 ; ! fRecord_isBOF varName_s7ac6  &&  ! fRecord_isEOF varName_s7ac6 ; }
+fRecord_Get_LBound(){ #
+	declare -n  varName_s7a9r=$1
+	declare -n  assArr_s7a9r=$2
+	declare -r  retVal="${assArr_s7a9r["_.LBound"]}"
+	if [[ -z "${retVal}" ]]; then fThrowError  "Either the associative array hasn't been initialized yet with at least one call to fRecord_Add(), or the associative array itself isn't valid. [¢⍤āz]"  "${FUNCNAME[0]}"
+	else varName_s7a9r=$retVal; fi; }
+fRecord_Get_UBound(){ #
+	declare -n  varName_s7a9s=$1
+	declare -n  assArr_s7a9s=$2
+	declare -r  retVal="${assArr_s7a9s["_.UBound"]}"
+	if [[ -z "${retVal}" ]]; then  fThrowError  "Either the associative array hasn't been initialized yet with at least one call to fRecord_Add(), or the associative array itself isn't valid. [¢⍤āz]"  "${FUNCNAME[0]}"
+	else  varName_s7a9s=$retVal ; fi; }
+fRecord_Get_Cursor(){ #
+	declare -n  varName_s7a9t=$1
+	declare -n  assArr_s7a9t=$2
+	declare -r  retVal="${assArr_s7a9t["_.Cursor"]}"
+	if [[ -z "${retVal}" ]]; then  fThrowError  "Either the associative array hasn't been initialized yet with at least one call to fRecord_Add(), or the associative array itself isn't valid. [¢⍤āz]"  "${FUNCNAME[0]}"
+	else  varName_s7a9t=$retVal ; fi; }
+
+
+##	Group purpose ....: For specified associative arrays, appends from, or copies to, as second associative array.
+##	Input ............: [per-function]
+##	Function return...: >0 if error
+##	StdErr ...........: [if error]
+##	Other side-effects: Calling functions' associative arrays.
+##	Dependencies .....: fThrowError()
+##	Unit tests passed :
+fAA_AppendFromSubAA(){ :; }  #TODO
+fAA_FilterToSubAA(){ :; }    #TODO
+
+
+##	Group purpose ....: Lighter-weight wrappers for Bash associative arrays. Unlike fRecord_*, don't try to abstract
+##	                    too much away. You are still free to loop over and access the array directly. The only idea
+##	                    it keeps from fRecord_*, is the idea of per-array metadata like '_.LBound' and '_.UBound'.
+##	Input ............: [per-function]
+##	Function return...: Usually >0 if error
+##	StdErr ...........: [if error]
+##	Other side-effects: Calling functions' associative arrays, and in some cases variables to store results.
+##	Notes ............: Although conceptually cool in the context of Bash's limited array handling and lack of OO,
+##	                    this is all probably pretty slow. So maybe don't use this for performance-critical bottlenecks.
+##	                    (Line-delimited strings with tools like sed, awk, grep, and tr are usually the fastest for massive
+##	                    amounts of data. Or more natively, multiple arrays each representing a field, with matching integer
+##	                    indexes, would almost certainly be faster than this conceit.)
+##	Dependents .......: fInit() [in stock standard template]
+##	Dependencies .....: fThrowError(), fAA_AppendFromSubAA(), fAA_FilterToSubAA()
+##	Unit tests passed :
+fAssArr_AddIdx(){ ## Add a new record.
+	[[ -v $1 ]] || fThrowError "${errBadRef_Chg_AssArr} [¢⍩fP]"  "${FUNCNAME[0]}" ; declare -n  assArr_s7abk=$1  ## Arg: <REQUIRED>: Associative array.
+	[[ -v $2 ]] || fThrowError "${errBadRef_Ret_Int} [¢⍩fS]"     "${FUNCNAME[0]}" ; declare -n  newIdx_s7agn=$2  ## Arg: <REQUIRED>: New integer index return value.
+	[[ -z "${assArr_s7abk["_.LBound"]}" ]] && assArr_s7abk=( ["_.LBound"]=1  ["_.UBound"]=0  ["_.Cursor"]=0 )
+	newIdx_s7agn=$((${assArr_s7abk["_.UBound"]} + 1))  ## Increment idx.
+	assArr_s7abk["_.UBound"]=$newIdx_s7agn; }  ## set UBound to incremented idx.
+fAssArr_SetVal(){ #
+	declare -n  assArr_s7abl=$1
+	declare -ri arrIdx=$2
+	declare -r  arrProperty="${3:-}"
+	declare -r  setVal="${4:-}"
+	assArr_s7abl["${arrIdx}.${arrProperty}"]="${setVal}" ;}
+fAssArr_GetVal(){ #
+	declare -n  varName_s7a8g=$1
+	declare -n  assArr_s7abm=$2
+	declare -ri arrIdx=$3
+	declare -r  arrProperty="${4:-}"
+	declare -r  arrKey="${arrIdx}.${arrProperty}"
+	if [[ "${assArr_s7abm["${arrKey}"]+isset}" != "isset" ]]; then  fThrowError  "Either the key '${arrKey}' - or the associative array itself - doesn't exist. [¢⍤āᚠ]"  "${FUNCNAME[0]}"
+	else  varName_s7a8g="${assArr_s7abm["${arrKey}"]}"; fi ;}
+fAssArr_GetSubAssArr_Idx(){ :; }  #TODO
+fAssArr_SetSubAssArr_Idx(){ :;}  #TODO
+fAssArr_Delete_Idx(){ :; }        #TODO
+
 
 ##	Purpose ..........: Test if a string is that of an existing function name.
 ##	Input ............: <test string>
@@ -577,7 +908,7 @@ fRunFunctionAs(){ #
 ##	Dependents .......: fRunFunctionAs()
 ##	Dependencies .....:
 ##	Unit tests passed : 20250709-173511
-fIsFunction(){ [[ $(type -t "$1") == function ]]; }
+fIsFunction(){ [[ $(type -t "${1:-}") == function ]]; }
 
 ##	Purpose ..........: Test if a string is that of an existing username.
 ##	Input ............: <test string>
@@ -585,7 +916,7 @@ fIsFunction(){ [[ $(type -t "$1") == function ]]; }
 ##	Dependents .......: fRunFunctionAs()
 ##	Dependencies .....:
 ##	Unit tests passed : 20250709-173328
-fIsUser(){ { [[ -z "$1" ]] && return 3; } || getent passwd "$1" &>/dev/null; }
+fIsUser(){ { [[ -z "${1:-}" ]] && return 3; } || getent passwd "${1:-}" &>/dev/null; }
 
 ##	Purpose ..........: Constants for several functions below. (These must appear higher in script.)
 ##	Dependencies .....: fIsInt(), fIsNum(), __pGetX_Common(), fRoundNum(), fMath()
@@ -603,7 +934,7 @@ declare -r sedE_NoInsignificantNonNakedZeros="s#^([+\-]?)0*([1-9][0-9]*)#\1\2#; 
 ##	Notes ............: If there are digits AFTER a decimal, then it's not considered an int. Numbers with multiple '+/-' delimiters, or in the wrong place, aren't ints.
 ##	Dependen[ts;cies] : 1, 0
 ##	Unit tests passed : 20250708
-fIsInt(){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##"  <<<  "$1" | grep  -qP  '^[+-]?[0-9]+\.?$'; }
+fIsInt(){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##"  <<<  "${1:-}" | grep  -qP  '^[+-]?[0-9]+\.?$'; }
 
 ##	Purpose ..........: Test if input is a fairly raw number, integer or decimal. Currency symbols, +/-, %, and thousands separators are ok.
 ##	Input ............: <test value>
@@ -612,7 +943,7 @@ fIsInt(){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##
 ##	Notes ............: Phone numbers and IP addresses, for example, are not 'numbers'. They have delimiters that happen to have meaning for numbers, but multiple of them.
 ##	Dependen[ts;cies] : 1, 0
 ##	Unit tests passed : 20250708
-fIsNum(){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##; s#\.##;"  <<<  "$1" | grep  -qP  '^-?[0-9]+%?$' ; }
+fIsNum(){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##; s#\.##;"  <<<  "${1:-}" | grep  -qP  '^-?[0-9]+%?$' ; }
 
 ##	Purpose ..........: Floating-point-capable "-gt" (which Bash can't natively do). Can also compare string data.
 ##	Input ............: <val1>  <val2>
@@ -621,7 +952,7 @@ fIsNum(){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##
 ##	Notes ............: Does no input validation. Can and will compare more than numbers.
 ##	Dependen[ts;cies] : 0, 0
 ##	Unit tests passed : 20250706
-fIsVal1_gt_Val2(){ awk -v Val1="$1" -v Val2="$2" 'BEGIN {exit !(Val1 > Val2)}'; }
+fIsVal1_gt_Val2(){ awk -v Val1="${1:-}" -v Val2="${2:-}" 'BEGIN {exit !(Val1 > Val2)}'; }
 
 ##	Purpose ..........: Floating-point-capable "-lt" (which Bash can't natively do). Can also compare string data.
 ##	Input ............: <val1>  <val2>
@@ -630,7 +961,7 @@ fIsVal1_gt_Val2(){ awk -v Val1="$1" -v Val2="$2" 'BEGIN {exit !(Val1 > Val2)}'; 
 ##	Notes ............: Does no input validation. Can and will compare more than numbers.
 ##	Dependen[ts;cies] : 0, 0
 ##	Unit tests passed : 20250706
-fIsVal1_lt_Val2(){ awk -v Val1="$1" -v Val2="$2" 'BEGIN {exit !(Val1 < Val2)}'; }  ## Floating-point-capable -lt (which Bash can't natively do). Unit tests passed on: 20250706.
+fIsVal1_lt_Val2(){ awk -v Val1="${1:-}" -v Val2="${2:-}" 'BEGIN {exit !(Val1 < Val2)}'; }  ## Floating-point-capable -lt (which Bash can't natively do). Unit tests passed on: 20250706.
 
 ##	Purpose ..........: PCRE-compatibble regex test.
 ##	Input ............: <string>  <regex>  [0=case-INsensitive:default, 1=case-sensitive]
@@ -640,8 +971,8 @@ fIsVal1_lt_Val2(){ awk -v Val1="$1" -v Val2="$2" 'BEGIN {exit !(Val1 < Val2)}'; 
 ##	Dependen[ts;cies] : 0, 0
 ##	Unit tests passed : 20250706
 fIsRegexMatch(){
-	if [[ "$3" == "1" ]]; then grep -qP  "$2" <<< "$1"
-	else                       grep -qPi "$2" <<< "$1"; fi; }
+	if [[ "${3:-}" == "1" ]]; then grep -qP  "${2:-}" <<< "${1:-}"
+	else                         grep -qPi "${2:-}" <<< "${1:-}"; fi; }
 
 ##	Purpose ..........: Floating-point-capable min (which Bash can't natively do).
 ##	Input ............: <byref for return value>  <val1>  <val2>
@@ -652,7 +983,7 @@ fIsRegexMatch(){
 ##	Unit tests passed : 20250706
 fGetMinVal(){
 	declare -n  varName_s76fk=$1  ## <REQUIRED>: Variable for return. Also pass ints or floats (strings) for $2 and $3.
-	{ awk -v Num1="$2" -v Num2="$3" 'BEGIN {exit !(Num1 < Num2)}' && varName_s76fk="$2"; } || varName_s76fk="$3" ;:;}
+	{ awk -v Num1="${2:-}" -v Num2="${3:-}" 'BEGIN {exit !(Num1 < Num2)}' && varName_s76fk="${2:-}"; } || varName_s76fk="${3:-}" ;:;}
 
 ##	Purpose ..........: Floating-point-capable max (which Bash can't natively do).
 ##	Input ............: <byref for return value>  <val1>  <val2>
@@ -663,7 +994,7 @@ fGetMinVal(){
 ##	Unit tests passed : 20250706
 fGetMaxVal(){
 	declare -n  varName_s76s9=$1  ## <REQUIRED>: Variable for return. Also pass ints or floats (strings) for $2 and $3.
-	{ awk -v Num1="$2" -v Num2="$3" 'BEGIN {exit !(Num1 > Num2)}' && varName_s76s9="$2"; } || varName_s76s9="$3" ;:;}
+	{ awk -v Num1="${2:-}" -v Num2="${3:-}" 'BEGIN {exit !(Num1 > Num2)}' && varName_s76s9="${2:-}"; } || varName_s76s9="${3:-}" ;:;}
 
 ##	Purpose ..........: Floating-point-capable number forced between min and max.
 ##	Purpose ..........: Floating-point-capable max (which Bash can't natively do).
@@ -674,7 +1005,7 @@ fGetMaxVal(){
 ##	Dependen[ts;cies] : 0, 0
 ##	Unit tests passed : 20250706
 fGetBetweenVal(){
-	declare -n  varName_s77dr=$1 ; declare -r  testNum="$2"  minNum="$3"  maxNum="$4"
+	declare -n  varName_s77dr=$1 ; declare -r  testNum="${2:-}"  minNum="${3:-}"  maxNum="${4:-}"
 	     awk -v Val1="$minNum"  -v Val2="$maxNum" 'BEGIN {exit !(Val1 > Val2)}' && fThrowError  "Arg3 (min) must be lower than Arg4 (max). [¢¿5⍩]"  "${FUNCNAME[0]}"
 	if   awk -v Val1="$testNum" -v Val2="$minNum" 'BEGIN {exit !(Val1 < Val2)}' ; then varName_s77dr="$minNum"
 	elif awk -v Val1="$testNum" -v Val2="$maxNum" 'BEGIN {exit !(Val1 > Val2)}' ; then varName_s77dr="$maxNum"
@@ -690,7 +1021,7 @@ fGetBetweenVal(){
 ##	Unit tests passed : 20250708
 fGetBool(){
 	##	Unit tests passed, code minified on: 20250704.
-	declare -n  varRef_s74hb=$1 ; declare -r  arg_inputVal="$2"  arg_defaultVal="$3"
+	declare -n  varRef_s74hb=$1 ; declare -r  arg_inputVal="${2:-}"  arg_defaultVal="${3:-}"
 	varRef_s74hb=0
 	local -i defaultVal=0; local -i isSet_defaultVal=0; [[ -n "${arg_defaultVal}" ]] && { isSet_defaultVal=1 ; defaultVal=$arg_defaultVal ; }
 	case "${arg_inputVal,,}" in
@@ -733,8 +1064,8 @@ fGetInt(){
 	## Removing commas and insignificant 0s. Does not round. (To get a rounded integers, use 'fGetNum NUM 0'.) For %, divides by 100 then truncates.
 	## Unit tests passed, code minified on: 20250708.
 	local -n varRef_s74bm=$1       ## Arg <REQUIRED>: Variable for return integer.
-	local -r arg_inputVal="$2"     ## Arg [optional]: Input string to extract/convert to integer.
-	local -r arg_defaultVal="$3"   ## Arg [optional]: This will be used if input is blank, or if input is garbage and $tryNotToError is true.
+	local -r arg_inputVal="${2:-}"     ## Arg [optional]: Input string to extract/convert to integer.
+	local -r arg_defaultVal="${3:-}"   ## Arg [optional]: This will be used if input is blank, or if input is garbage and $tryNotToError is true.
 	varRef_s74bm=0
 	local -i defaultVal=0    ; local -i isSet_defaultVal=0    ; [[ -n "${arg_defaultVal}"    ]] && { isSet_defaultVal=1    ; defaultVal=$arg_defaultVal ; } ; local -ri defaultVal=$defaultVal ; local -i isSet_defaultVal=$isSet_defaultVal
 	local    outValStr="${arg_inputVal}"
@@ -753,9 +1084,9 @@ fGetNum(){
 	## Converts, and optionally constrains, rounds, defaults, and/or validates an integer or float.
 	## Unit tests passed, code minified on: 20250708.
 	local -n varRef_s76ej=$1      ; shift || true  ## Arg <REQUIRED>: Variable for return number. Can be int or string.
-	local -r arg_inputVal="$1"    ; shift || true  ## Arg [optional]: Input string to convert to integer. If empty, default or 0 will be returned regardless of $_FGETINT_NOERROR
-	local    arg_roundDigits="$1" ; shift || true  ## Arg [optional]: number of decimal places to round to.
-	local -r arg_defaultVal="$1"  ; shift || true  ## Arg [optional]: This will be used if input is blank, or if input is garbage and $_FGETINT_NOERROR is 1.
+	local -r arg_inputVal="${1:-}"    ; shift || true  ## Arg [optional]: Input string to convert to integer. If empty, default or 0 will be returned regardless of $_FGETINT_NOERROR
+	local    arg_roundDigits="${1:-}" ; shift || true  ## Arg [optional]: number of decimal places to round to.
+	local -r arg_defaultVal="${1:-}"  ; shift || true  ## Arg [optional]: This will be used if input is blank, or if input is garbage and $_FGETINT_NOERROR is 1.
 	varRef_s76ej=0
 	local -i roundDigits=0         ; local -i isSet_roundDigits=0   ; [[ -n "${arg_roundDigits}"   ]] && { isSet_roundDigits=1   ; roundDigits=$arg_roundDigits ; }
 	local    defaultVal=0          ; local -i isSet_defaultVal=0    ; [[ -n "${arg_defaultVal}"    ]] && { isSet_defaultVal=1    ; defaultVal=$arg_defaultVal ; }
@@ -810,8 +1141,8 @@ fRoundNum(){
 declare -i _FAUTOMATH_SHOWMETHOD_ON_STDERR=0
 fMath(){ ## Wrapper for fastest math. With much better rounding and output. Supposed to be 64-bit double-precision float math via mawk.
 	local -n  varRef_s77c5=$1       ## Arg <REQUIRED>: Variable for return result.
-	local -r  mathExpression="$2"   ## Arg <REQUIRED>: Math expression.
-	local -r  arg_roundDigits="$3"  ## Arg [optional]: Digits to round to. Clamps to 0 < x <= 15. If not specified, returns up to 15, or as few as needed.
+	local -r  mathExpression="${2:-}"   ## Arg <REQUIRED>: Math expression.
+	local -r  arg_roundDigits="${3:-}"  ## Arg [optional]: Digits to round to. Clamps to 0 < x <= 15. If not specified, returns up to 15, or as few as needed.
 	[[ -z "${mathExpression}" ]] && fThrowError  "A math expression or 'mawk' formula must be provided as the second argument."  "${FUNCNAME[0]}"
 	varRef_s77c5=0; local -i roundDigits=15 ; [[ -n "${arg_roundDigits}" ]] && roundDigits=$arg_roundDigits  ## 15 is max useful precision with 64-bit double-precision float.
 	{ ((roundDigits < 0)) && roundDigits=0; } || { ((roundDigits > 15)) && roundDigits=15; }  ## 15 digits max precision no matter $arg_roundDigits.
@@ -824,8 +1155,8 @@ fMath(){ ## Wrapper for fastest math. With much better rounding and output. Supp
 	fi  ;:;}
 fBigMath(){ ## Wrapper for slower arbitray-precision math via 'bc -l', but with WAY better rounding and output. Note: Not eve gwak --bignum can do this.
 	local -n  varRef_s77c9=$1       ## Arg <REQUIRED>: Variable for return result.
-	local -r  mathExpression="$2"   ## Arg <REQUIRED>: Math expression.
-	local -r  arg_roundDigits="$3"  ## Arg [optional]: Digits to round to. Basically unlimited. If not specified, returns up to 15 by default, or as few as needed.
+	local -r  mathExpression="${2:-}"   ## Arg <REQUIRED>: Math expression.
+	local -r  arg_roundDigits="${3:-}"  ## Arg [optional]: Digits to round to. Basically unlimited. If not specified, returns up to 15 by default, or as few as needed.
 	[[ -z "${mathExpression}" ]] && fThrowError  "A math expression or 'bc -l' formula must be provided as the second argument."  "${FUNCNAME[0]}"
 	varRef_s77c9=0; local -i roundDigits=15 ; [[ -n "${arg_roundDigits}" ]] && roundDigits=$arg_roundDigits
 	((roundDigits < 0)) && roundDigits=0
@@ -836,18 +1167,18 @@ fBigMath(){ ## Wrapper for slower arbitray-precision math via 'bc -l', but with 
 	varRef_s77c9=$wrkVal_s77q1 ;:;}
 fAutoMath(){  ## Decide on _Math() or _BigMath() based on crude digit count. Slower, if you know which one you need.
 	local -n  varRef_s78pe=$1       ## Arg <REQUIRED>: Variable for return result.
-	local -r  mathExpression="$2"   ## Arg <REQUIRED>: Math expression.
-	local -r  arg_roundDigits="$3"  ## Arg [optional]: Digits to round to. Basically unlimited. If not specified, returns up to 15 by default, or as few as needed.
+	local -r  mathExpression="${2:-}"   ## Arg <REQUIRED>: Math expression.
+	local -r  arg_roundDigits="${3:-}"  ## Arg [optional]: Digits to round to. Basically unlimited. If not specified, returns up to 15 by default, or as few as needed.
 	if [[ $(grep -Po '[0-9]' <<< "${varRef_s78pe}" | wc -l || 0) -gt 15 ]]; then  fBigMath  varRef_s78pe  "${mathExpression}"  "${arg_roundDigits}"
 	else                                                                          fMath     varRef_s78pe  "${mathExpression}"  "${arg_roundDigits}"; fi ;:;}
 
 fGetFormattedNum(){  ## !locale-aware
 	local -n varRef_s74h1=$1             ; shift || true  ## Arg <REQUIRED>: Variable for return formatted number.
-	local -r arg_inputVal="$1"           ; shift || true  ## Arg <REQUIRED>: Input value to convert to number, then format as a string.
-	local -r arg_numDecimalPlaces="$1"   ; shift || true  ## Arg [optional]:
-	local -r arg_showThousandsDelim="$1" ; shift || true  ## Arg [optional]:
-	local -r arg_numLeadingZeroPad="$1"  ; shift || true  ## Arg [optional]:
-	local -r arg_numTrailingZeroPad="$1" ; shift || true  ## Arg [optional]:
+	local -r arg_inputVal="${1:-}"           ; shift || true  ## Arg <REQUIRED>: Input value to convert to number, then format as a string.
+	local -r arg_numDecimalPlaces="${1:-}"   ; shift || true  ## Arg [optional]:
+	local -r arg_showThousandsDelim="${1:-}" ; shift || true  ## Arg [optional]:
+	local -r arg_numLeadingZeroPad="${1:-}"  ; shift || true  ## Arg [optional]:
+	local -r arg_numTrailingZeroPad="${1:-}" ; shift || true  ## Arg [optional]:
 	local retVal=""
 	local tmpNum=0
 	fGetNum  tmpNum  "${arg_inputVal}"  ""  ""  ""  "${arg_numDecimalPlaces}"  "${arg_doTruncateNotRound}"
@@ -864,23 +1195,37 @@ fGetRandomInt(){
 	varName=$(shuf -i ${intLow}-${intHigh} -n 1 --random-source=/dev/urandom)
 :;}
 
+
+##	Group purpose ....: Array to-and-from string variables or files.
+##	Input ............: [per-function]
+##	Function return...: >0 if error
+##	StdErr ...........: [if error]
+##	Other side-effects: Calling functions' arrays, string variables, or system files.
+##	Notes ............: Although conceptually cool in the context of Bash's limited array handling and lack of OO,
+##	Dependents .......:
+##	Dependencies .....: fThrowError()
+##	Unit tests passed :
+fArrayFromStr(){ :; }
+fArrayToStr(){ :; }
+fArrayFromFile(){ :; }
+fArrayToFile(){ :; }
+
+
 fGetStrMatchPos(){
 	##	Unit tests passed on: 20250704.
-	local -n varRef_s74ht="$1"  ## Arg <REQUIRED>: Variable for return value, 0=no match, >=1 position of start of firt match.
-	local -r mainStr="$2"
-	local -r findStr="$3"
+	local -n varRef_s74ht="${1:-}"  ## Arg <REQUIRED>: Variable for return value, 0=no match, >=1 position of start of firt match.
+	local -r mainStr="${2:-}"
+	local -r findStr="${3:-}"
 	varRef_s74ht=0
 	{ [[ -z "${mainStr}" ]] || [[ -z "${findStr}" ]]; } && return 0
 	local -r testStr="${mainStr%%"$findStr"*}"
 	[[ "${testStr}" != "${mainStr}" ]] && varRef_s74ht=$((${#testStr}+1))
-:;}
-
+	:;}
 fTrimStr(){
 	##	Unit tests passed on: 20250704.
 	local -n varRef_s74n3=$1  ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
 	[[ -n "${varRef_s74n3}" ]] && varRef_s74n3="$(sed 's/^[[:blank:]]*//g; s/[[:blank:]]*$//g;' 2>/dev/null <<< "${varRef_s74n3}" || true)"
-:;}
-
+	:;}
 fNormStr(){
 	##	Purpose: Strips leading and trailing spaces from string, and changes all whitespace inside a string to single spaces. Reference: https://unix.stackexchange.com/a/205854
 	##	Unit tests passed on: 20250704.
@@ -888,24 +1233,22 @@ fNormStr(){
 	varName_s74e8="${varName_s74e8//[$'\t\r\n ']/' '}"  ## Convert misc whitespace to space.
 	varName_s74e8="${varName_s74e8//$'\t'/ }"           ## Convert tabs to spaces
 	varName_s74e8="$(awk '{$1=$1};1' 2>/dev/null <<< "${varName_s74e8}" || true)"  ## Collapse multiple spaces to one and trim
-:;}
-
+	:;}
 fAppendStr(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74nj=$1                    ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
-	local -r appendFirstIfExistingNotEmpty="$2"  ## Arg [optional]: String to append between contents in $varName_s74nj if not empty, and $appendStr.
-	local -r appendStr="$3"                      ## Arg [optional]: String to append at end.
+	local -r appendFirstIfExistingNotEmpty="${2:-}"  ## Arg [optional]: String to append between contents in $varName_s74nj if not empty, and $appendStr.
+	local -r appendStr="${3:-}"                      ## Arg [optional]: String to append at end.
 	[[ -n "${varName_s74nj}" ]] && varName_s74nj="${varName_s74nj}${appendFirstIfExistingNotEmpty}"
 	varName_s74nj="${varName_s74nj}${appendStr}"
-:;}
-
+	:;}
 fPadTruncStr(){
 	##	Unit tests passed on: 20250704.
 	local -n    varName_s74np=$1             ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
 	local    -i toLen=$2                     ## Arg <REQUIRED>: Integer length to pad to. If 0, won't pad, and may return '' if $doTruncateIfInputTooLong is 1.
 	local    -i padDirection=$3              ## Arg [optional]: Negative value to pad to left, positive [default] pad to right.
 	local    -i doTruncateIfInputTooLong=$4  ## Arg [optional]: 1 to truncate input string if it's longer than $toLen. Default is 0.
-	local       padChar="$5"                 ## Arg [optional]: Will default to space (' '), if empty. Only first character used.
+	local       padChar="${5:-}"                 ## Arg [optional]: Will default to space (' '), if empty. Only first character used.
 	((doTruncateIfInputTooLong != 0)) && doTruncateIfInputTooLong=1 #.........................: Normalize $doTruncateIfInputTooLong.
 	[[ ${#varName_s74np} -eq $toLen ]] && return 0 #..........................................: String already same as it would be after transform, so do nothing and return
 	{ ((toLen <= 0)) && ((doTruncateIfInputTooLong)); } && { varName_s74np=""; return 0; } #..: If $toLen <= 0, return and truncate, set empty string and return.
@@ -921,43 +1264,41 @@ fPadTruncStr(){
 		varName_s74np="${padStr}${varName_s74np}"
 		varName_s74np="${varName_s74np: -$toLen}"  ## Left-pad and/or truncate; either it's long enough to truncate padding, or we only made it this far because we're going to truncate input and $toLen is >0.
 	fi
-:; }
-
+	:; }
 fTernaryStr(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74qf=$1    ; shift || true  ## Arg <REQUIRED>: Variable reference for result.
-	local -r trueCondition="$1"  ; shift || true  ## Arg <REQUIRED>: String that is considered 'true'.
-	local -r testCondition="$1"  ; shift || true  ## Arg <REQUIRED>: String to compare to $trueCondition to test for true.
-	local -r prefixStr="$1"      ; shift || true  ## Arg [optional]: String to prepend to beginning no matter what.
-	local -r ifTrueStr="$1"      ; shift || true  ## Arg [optional]: String to append if true.
-	local -r ifFalseStr="$1"     ; shift || true  ## Arg [optional]: String to append if false.
-	local -r suffixStr="$1"      ; shift || true  ## Arg [optional]: String to append to end to no matter what.
+	local -r trueCondition="${1:-}"  ; shift || true  ## Arg <REQUIRED>: String that is considered 'true'.
+	local -r testCondition="${1:-}"  ; shift || true  ## Arg <REQUIRED>: String to compare to $trueCondition to test for true.
+	local -r prefixStr="${1:-}"      ; shift || true  ## Arg [optional]: String to prepend to beginning no matter what.
+	local -r ifTrueStr="${1:-}"      ; shift || true  ## Arg [optional]: String to append if true.
+	local -r ifFalseStr="${1:-}"     ; shift || true  ## Arg [optional]: String to append if false.
+	local -r suffixStr="${1:-}"      ; shift || true  ## Arg [optional]: String to append to end to no matter what.
 	varName_s74qf=""
 	varName_s74qf="${varName_s74qf}${prefixStr}"
 	{ [[ "${testCondition}" == "${trueCondition}" ]] && varName_s74qf="${varName_s74qf}${ifTrueStr}"; } || varName_s74qf="${varName_s74qf}${ifFalseStr}";
 	varName_s74qf="${varName_s74qf}${suffixStr}"
-:;}
-
+	:;}
 ConditionalSandwichStr(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74qp=$1  ; shift || true  ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
-	local -r withPrefix="$1"   ; shift || true  ## Arg [optional]: String to prepend to beginning, only if first arg is non-empty.
-	local -r withSuffix="$1"   ; shift || true  ## Arg [optional]: String to append to end, only if first arg is non-empty.
+	local -r withPrefix="${1:-}"   ; shift || true  ## Arg [optional]: String to prepend to beginning, only if first arg is non-empty.
+	local -r withSuffix="${1:-}"   ; shift || true  ## Arg [optional]: String to append to end, only if first arg is non-empty.
 	[[ -n "${varName_s74qp}" ]] && varName_s74qp="${withPrefix}${varName_s74qp}${withSuffix}"
-:;}
+	:;}
 
 declare -ri outputNonEmptyArg_MaxCount=128
 fJoinNonEmptyArgs(){  ## Given a list of arguments, joins all empty ones together
 	##	Unit tests passed on: 20250704.
 	local -n  varName_s74qv=$1  ; shift || true  ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
 	for ((i = 0; i < outputNonEmptyArg_MaxCount; i++)); do
-		[[ -n "${1}" ]] && varName_s74qv="${varName_s74qv}${1}"
+		[[ -n "${1:-}" ]] && varName_s74qv="${varName_s74qv}${1:-}"
 		shift || { true; break; }
 	done ;:;}
 fJoinNonEmptyArgs_byecho(){
 	##	Unit tests passed on: 20250704.
 	for ((i = 0; i < outputNonEmptyArg_MaxCount; i++)); do
-		[[ -n "${1}" ]] && echo -n "${1}"
+		[[ -n "${1:-}" ]] && echo -n "${1:-}"
 		shift || { true; break; }
 	done ;:;}
 
@@ -999,7 +1340,7 @@ fGetOgUserHome(){
 	##	Used by:
 	##		_fLog_Init()
 	local -n varName_s74rm=$1  ## Arg <REQUIRED>: Variable reference for result.
-	local    userName="$2"     ## Arg [optional]: Username. If blank will use fGetOgUserName().
+	local    userName="${2:-}"     ## Arg [optional]: Username. If blank will use fGetOgUserName().
 	local    retVal=""
 	[[ -z "${userName}" ]] && fGetOgUserName userName
 	[[ -z "${retVal}" ]] && retVal="$(eval echo "~${userName}")"
@@ -1009,9 +1350,9 @@ fGetOgUserHome(){
 
 fGetFileSize(){
 	local -n varName_s73bq=$1                   ## Arg <REQUIRED>: Variable reference for result.
-	local -r fileSpec="$2"                      ## Arg <REQUIRED>: Filespec to get filesize of.
-	local    unitDef="$3"                       ## TODO: B [default], KB, MB, GB, TB, PB, EB, ZB, YB, KiB, MiB, GiB, TiB, PiB, EiB, ZiB, YiB.
-	local -r thousandsSeparatorChar="$4"        ## TODO
+	local -r fileSpec="${2:-}"                      ## Arg <REQUIRED>: Filespec to get filesize of.
+	local    unitDef="${3:-}"                       ## TODO: B [default], KB, MB, GB, TB, PB, EB, ZB, YB, KiB, MiB, GiB, TiB, PiB, EiB, ZiB, YiB.
+	local -r thousandsSeparatorChar="${4:-}"        ## TODO
 	varName_s73bq=-1
 	[[ -z "${unitDef}" ]] && unitDef="B" ; local -r unitDef="${unitDef}"
 	local wrking_fSize="$(stat --printf="%s" "${fileSpec}" 2> /dev/null || true)"
@@ -1021,7 +1362,7 @@ fGetFileSize(){
 fGetFileTime_mtime(){
 	##	Dependencies: fFormatTime_Linux_EpochAndMS()
 	local -n   varName_s66kl=$1     ## Arg <REQUIRED>: Variable reference for result.
-	local -r   fileSpec="$2"        ## Arg <REQUIRED>: Filespec to get filesize of.
+	local -r   fileSpec="${2:-}"        ## Arg <REQUIRED>: Filespec to get filesize of.
 	local   -i msDigitPrecision=$3  ## Default to 6 [if input 0], which seems to be the most precise without n^64 floating-point error.
 	varName_s66kl=""
 	local wrking_mtime="$(date -r "${fileSpec}" '+%s.%N')"  ## Faster than Python
@@ -1033,8 +1374,8 @@ fGetFileTime_mtime(){
 fConvertBase10to32c(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74rp=$1     ## Arg <REQUIRED>: Variable reference for result.
-	local -r input_InBase10="$2"
-	[[ -z "$1" ]] && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩǑǴ]"  "${FUNCNAME[0]}"
+	local -r input_InBase10="${2:-}"
+	[[ -z "${1:-}" ]] && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩǑǴ]"  "${FUNCNAME[0]}"
 	[[ -v returnVariableName ]]      && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩöÁ]"  "${FUNCNAME[0]}"
 	[[ -z "${input_InBase10}" ]]     && fThrowError "No base-10 integer specified to convert. [фȟñŸ]"  "${FUNCNAME[0]}"
 	[[ -z "$(echo "$input_InBase10" | grep -iPo '^[0-9]+$')" ]] && fThrowError "Expecting a base-10 integer as input, instead got '${input_InBase10}'. [фȟñĆ]"  "${FUNCNAME[0]}"
@@ -1048,13 +1389,12 @@ fConvertBase10to32c(){
 		retVal="${retVal}${baseChars[${idx}]}" #...: Build base32c return string one character at a time.
 	done
 	varName_s74rp="${retVal}"
-:;}
-
+	:;}
 fConvertBase10to256j1(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74rt=$1    ## Arg <REQUIRED>: Variable reference for result.
-	local -r input_InBase10="$2"
-	[[ -z "$1" ]] && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩŘЖ]"  "${FUNCNAME[0]}"
+	local -r input_InBase10="${2:-}"
+	[[ -z "${1:-}" ]] && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩŘЖ]"  "${FUNCNAME[0]}"
 	[[ -v returnVariableName ]]      && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩŇǵ]"  "${FUNCNAME[0]}"
 	[[ -z "${input_InBase10}" ]]     && fThrowError "No base-10 integer specified to convert. [фǩöū]]"  "${FUNCNAME[0]}"
 	[[ -z "$(echo "$input_InBase10" | grep -iPo '^[0-9]+$')" ]] && fThrowError "Expecting a base-10 integer as input, instead got '${input_InBase10}'. [фǩöȞ]"  "${FUNCNAME[0]}"
@@ -1068,11 +1408,11 @@ fConvertBase10to256j1(){
 		retVal="${retVal}${baseChars[${idx}]}" #...: Build base32c return string one character at a time.
 	done
 	varName_s74rt="${retVal}"
-:;}
+	:;}
 
 fMustBeInPath(){
 	##	Unit tests passed on: 20250704.
-	local -r programToCheckForInPath="$1"
+	local -r programToCheckForInPath="${1:-}"
 	if [[ -z "${programToCheckForInPath}" ]]; then
 		fThrowError "Not program specified."  "${FUNCNAME[0]}"
 	elif [[ -z "$(which ${programToCheckForInPath} 2>/dev/null || true)" ]]; then
@@ -1083,12 +1423,11 @@ fMustBeInPath(){
 fIndent_abs_pipe(){
 	## Pipe through this function to indent everything by $1 absolute spaces from the left.
 	sed -e 's/^[ \t]*//' | sed "s/^/$(printf "%${1}s")/"
-}
-
+	}
 fIndent_rltv_pipe(){
 	## Pipe through this function to indent everything by $1 additional spaces left.
 	sed "s/^/$(printf "%${1}s")/"
-}
+	}
 
 fFormatTime_Linux_EpochAndMS(){
 	##	Purpose:
@@ -1098,7 +1437,7 @@ fFormatTime_Linux_EpochAndMS(){
 	##	Notes:
 	##		- This was written before fGetFormattedNum().
 	local -n varName_s66kk=$1     ## Arg <REQUIRED>: Variable reference for result.
-	local    inputTime="$2"       ## Arg <REQUIRED>: Input Linux epoch time (optionally with decimal milliseconds), to format.
+	local    inputTime="${2:-}"       ## Arg <REQUIRED>: Input Linux epoch time (optionally with decimal milliseconds), to format.
 	local -i msDigitPrecision=$3  ## Default to 6 [if input 0], which seems to be the most precise without n^64 floating-point error.
 	varName_s66kk=""
 	[[ $msDigitPrecision -le 0 ]] && msDigitPrecision=6 ; local -ri msDigitPrecision=$msDigitPrecision
@@ -1121,37 +1460,6 @@ fFormatTime_Linux_EpochAndMS(){
 	[[ -n "${inputTime_left}" ]] && [[ -n "${inputTime_right}" ]] && varName_s66kk="${inputTime_left}.${inputTime_right}"
 :;}
 
-fRemoveOldLogs(){
-	##  Removes old [and optionally empty] log files.
-	##	Used by: _fLog_Init()
-	##	Example: fRemoveOldLogs  "${HOME}/var/log/$(basename "${0}")"  "$(basename "${0}")_*.log"  10  1
-	local -r basePath="${1}"                   ## Arg <REQUIRED>: Folder where logfiles go.
-	local -r wildcardFilespec="$2"             ## Arg <REQUIRED>: A filename with at least one required embedded POSIX wildcard in the string (NOT at the shell expansion level). This is to old logs can be deleted.
-	local    keepNewestNlogs=$3                ## Arg [optional]: Number of newest log files to keep. Defaults to $default_keepNewestNlogs
-	local    removeNullsThisMinutesOrOlder=$4  ## Arg [optional]: Remove empty files this many minutes or older. 0 to disable.
-	## Arg4: Remove 0-byte matches older than N > 0 minutes old. (Default = 0 which means DISABLE this action.
-	local -ri default_keepNewestNlogs=10
-	local -ri default_removeNullsThisMinutesOrOlder=$((60*24))
-	local -r  safetyCheck_Arg1MustContain="[^a-z0-9](log|archive|old|bak|backup|delete|zip|7z|tar|gz|tgz|xz|bz2|zst)"
-	[[   -z "${basePath}" ]] && fThrowError  "The first argument to this function must be a valid folder to rotate logs in."  "${FUNCNAME[0]}"
-	[[ ! -d "${basePath}" ]] && fThrowError  "The first argument to this function (the folder to rotate logs in) doesn't seem to exist: '${basePath}'."  "${FUNCNAME[0]}"
-	[[ "/" == "$(realpath "${basePath}")" ]] && fThrowError  "For safety purposes, the first argument to this function (the folder to rotate logs in '${basePath}') cannot be the root directory."  "${FUNCNAME[0]}"
-	[[ -z "${wildcardFilespec}" ]] && fThrowError  "The second argument to this function must be a single file name, with at least one POSIX wildcard character embedded in the string (rather than shell expansion variables)."  "${FUNCNAME[0]}"
-	grep -Pq '[*?\[\]]' <<< "${wildcardFilespec}" || fThrowError  "The second argument to this function (log filespec '${wildcardFilespec}') must have at least one POSIX wildcard expression embedded in the string, e.g.: *, ?, []."  "${FUNCNAME[0]}"
-	local -r fullPathspec="$(realpath "${basePath}")/${wildcardFilespec}"
-	grep -iPq "${safetyCheck_Arg1MustContain}" <<< "${fullPathspec}" || fThrowError "For safety purposes, as a crude check against potential massive accidental deletion, the full path/file spec sent to this function must satisfy the following regex: '${safetyCheck_Arg1MustContain}', but doesn't: '${fullPathspec}'."  "${FUNCNAME[0]}"
-	[[ -n "${keepNewestNlogs}" ]] && [[ ! "${keepNewestNlogs}" =~ ^[0-9]$ ]] && fThrowError  "The third argument to this function ('keep newest N logs'), must be an integer, but got '${keepNewestNlogs}' instead."  "${FUNCNAME[0]}"
-	[[ -z "${keepNewestNlogs}" ]] && keepNewestNlogs=${default_keepNewestNlogs}
-	local -ir keepNewestNlogs=$keepNewestNlogs
-	[[ -n "${removeNullsThisMinutesOrOlder}" ]] && [[ ! "${removeNullsThisMinutesOrOlder}" =~ ^[0-9]$ ]] && fThrowError  "The fourth argument to this function ('remove null files N minutes or older'), must be an integer >=0, but got '${removeNullsThisMinutesOrOlder}' instead."  "${FUNCNAME[0]}"
-	[[ -z "${removeNullsThisMinutesOrOlder}" ]] && removeNullsThisMinutesOrOlder=$default_removeNullsThisMinutesOrOlder
-	local -ir removeNullsThisMinutesOrOlder=$removeNullsThisMinutesOrOlder
-	local useRemoveProgram="rm" ; [[ -z "$(which trash 2>/dev/null || true)" ]] && useRemoveProgram="trash"; local -r useRemoveProgram="${useRemoveProgram}"
-	find "${basePath}" -maxdepth 1 -type f -name "${wildcardFilespec}" -printf '%T@ %p\0' | sort -z -n | head -z -n "-${keepNewestNlogs}" | cut -z -d' ' -f2- | xargs -0 -r "${useRemoveProgram}"
-	if ((removeNullsThisMinutesOrOlder > 0)); then
-		find "${basePath}" -maxdepth 1 -type f -name "${wildcardFilespec}" -empty -mmin +${removeNullsThisMinutesOrOlder} -delete
-	fi
-:;}
 
 ##	Purpose ..........: A little more safe rm. More checks, and optionally won't delete a non-empty dir.
 ##	Can be deleted? ..: Yes
@@ -1166,9 +1474,9 @@ fRemoveOldLogs(){
 ##	Dependencies .....: fThrowError()
 ##	Unit tests passed :
 fSafer_rm(){
-	local -r rmDir="$1"            ## Arg <REQUIRED>: Dir to delete.
-	local    raw_ignoreError="$2"  ## Arg [optional]: Ignore error on rm. [Default 0]
-	local    raw_mustBeEmpty="$3"  ## Arg [optional]: Dir must be empty, or error. [Default 1]
+	local -r rmDir="${1:-}"            ## Arg <REQUIRED>: Dir to delete.
+	local    raw_ignoreError="${2:-}"  ## Arg [optional]: Ignore error on rm. [Default 0]
+	local    raw_mustBeEmpty="${3:-}"  ## Arg [optional]: Dir must be empty, or error. [Default 1]
 	local -i ignoreError=0; [[ "${raw_ignoreError,,}" =~ "1"|"true" ]] && ignoreError=1; local -ri ignoreError=$ignoreError
 	local -i mustBeEmpty=1; [[ "${raw_mustBeEmpty,,}" =~ "1"|"true" ]] && mustBeEmpty=1; local -ri mustBeEmpty=$mustBeEmpty
 	[[   -z "${rmDir}"               ]] && fThrowError  "No folder to delete specified."
@@ -1217,9 +1525,9 @@ fSafer_rm(){
 ##	Unit tests passed :
 fFilesys_AddFilterDef(){  ## Filters are processed in order, so the that inclusive and exclusive filters are added purposely matters very much.
 	local -n  varFilterArr_s75n2=$1  ## Arg <REQUIRED>: Variable reference of regex filter array. Just an array created by caller, held in context by caller, but managed by fFilesys_AddFilterDef().
-	local -r  regEx="$2"             ## Arg <REQUIRED>: String regular expression, compatible with 'grep -P'
-	local     excOrInc="$3"          ## Arg [optional]: [+|-]. '+' [default] for inclusive filter that keeps only matches, '-' for exclusive filter that removes matches.
-	local     caseSensitive="$4"     ## Arg [optional]: [i|s]. 'i' for insensitive [default], 's' for case-sensitive.
+	local -r  regEx="${2:-}"             ## Arg <REQUIRED>: String regular expression, compatible with 'grep -P'
+	local     excOrInc="${3:-}"          ## Arg [optional]: [+|-]. '+' [default] for inclusive filter that keeps only matches, '-' for exclusive filter that removes matches.
+	local     caseSensitive="${4:-}"     ## Arg [optional]: [i|s]. 'i' for insensitive [default], 's' for case-sensitive.
 	[[ -z "${excOrInc}" ]] && excOrInc='+' ; [[ -z "${caseSensitive}" ]] && caseSensitive='i'
 	#fEchoVarAndVal regEx ; fEchoVarAndVal excOrInc ; fEchoVarAndVal caseSensitive
 	[[ -n "${regEx}" ]]                         || fThrowError "Must include a regular expression as the second argument."     "${FUNCNAME[0]}"
@@ -1229,8 +1537,8 @@ fFilesys_AddFilterDef(){  ## Filters are processed in order, so the that inclusi
 fFilesys_DoScan(){
 	local -n varFsList_s75hb=$1          ## Arg <REQUIRED>: Variable reference to append results to. May already have existing results.
 	local -n varFilterArr_s75hb=$2       ## Arg <REQUIRED>: Variable reference of regex filter array. Just an array created by caller, held in context by caller, but managed by fFilesys_AddFilterDef().
-	local -r arg_scanPath="$3"           ## Arg <REQUIRED>: Path to scan at and below.
-	local    scanBits="$4"               ## Arg [optional]: Coded string for one or more object types: [f]ile, [d]ir, [l]ink, [i]nvalid link, [e]xecutable files, named [p]ipe, [s]ocket, [c]haracter dev, [b]lock dev
+	local -r arg_scanPath="${3:-}"           ## Arg <REQUIRED>: Path to scan at and below.
+	local    scanBits="${4:-}"               ## Arg [optional]: Coded string for one or more object types: [f]ile, [d]ir, [l]ink, [i]nvalid link, [e]xecutable files, named [p]ipe, [s]ocket, [c]haracter dev, [b]lock dev
 	local    scanPath="${arg_scanPath}"
 	fNormalizePath scanPath
 	local -r scanPath="${scanPath}"
@@ -1309,7 +1617,7 @@ fFilesys_ApplyFilters(){ :  ## Only need to call explicitly, if user builds thei
 	done
 :;}
 __pFilesys_DoScan_Sub(){
-	local -n tmpResult_s75hg=$1; local -r scanPath="$2"; local -r scanBits="$3"; local -r whatBit="$4"; local -r findArg="$5"
+	local -n tmpResult_s75hg=$1; local -r scanPath="${2:-}"; local -r scanBits="${3:-}"; local -r whatBit="${4:-}"; local -r findArg="${5:-}"
 	if grep -qio "${whatBit}" <<< "${scanBits}"; then
 		[[ -n "${tmpResult_s75hg}" ]] && tmpResult_s75hg="${tmpResult_s75hg}"$'\n'
 		tmpResult_s75hg="${tmpResult_s75hg}$(eval "find  '${scanPath}'  ${findArg}  2>/dev/null || true")"
@@ -1337,10 +1645,10 @@ fTimer_Stop(){
 	varName_s76aj="$(date +%s.%N)" ;:; }
 fTimer_GetET(){
 	local -n  varName_s76am=$1   ## Arg <REQUIRED>: Variable reference to elapsed time. Must be a STRING, as a formatted string is returned.
-	local -r  timerStart="$2"    ## Arg <REQUIRED>: Value from fTimer_Start()
-	local -r  timerStop="$3"     ## Arg <REQUIRED>: Value from fTimer_Stop()
+	local -r  timerStart="${2:-}"    ## Arg <REQUIRED>: Value from fTimer_Start()
+	local -r  timerStop="${3:-}"     ## Arg <REQUIRED>: Value from fTimer_Stop()
 	local -r  arg_doFormat=$4    ## Arg [optional]: Default=1.  1 = yes format output; 0 = no just return raw 'seconds.milliseconds'.
-	local -r  timeUnit="$5"      ## Arg [optional]: Default=[A]uto. Or [MILLI]seconds, [S]econds, [MIN]utes, [H]ours, [D]ays, [W]eeks, [MO]nths, [Y]ears, [C]enturies, [MILLEN]enia.
+	local -r  timeUnit="${5:-}"      ## Arg [optional]: Default=[A]uto. Or [MILLI]seconds, [S]econds, [MIN]utes, [H]ours, [D]ays, [W]eeks, [MO]nths, [Y]ears, [C]enturies, [MILLEN]enia.
 	local -ri decimalDigits=$6   ## Arg [optional]: Number of digits to round to. If doFormat=1, then default=2. (If doFormat=0, no rounding.)
 	local -i doFormat=0
 	{ [[ -z "${arg_doFormat}" ]] || [[ "${arg_doFormat}" == "1" ]]; } && doFormat=0 ; local -ri doFormat=$doFormat
@@ -1385,117 +1693,6 @@ fTimer_GetET(){
 :;}
 
 
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....: Generic unit-testing (minified).
-##	Can be deleted? ..: Yes. External unit-test scripts will break, but not this script.
-##	Statefulness .....: Stateless.
-##	Input ............:
-##	Function return...:
-##	Stdout ...........:
-##	StdErr ...........:
-##	Other side-effects:
-##	Notes ............:
-##	Dependents .......:
-##	Dependencies .....:
-##	Unit tests passed :
-declare __vAllTestIDs=""
-fUnitTest_PrintSectionHeader(){
-	fEcho_Clean; fEcho_Clean "•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
-	if [[ -n "$1" ]]; then
-		fEcho_Clean "Unit test section: ${1}"
-		fEcho_Clean "•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"
-	fi ;:;}
-fAssert_AreEqual(){
-	local -r testID="$1"            ## Arg [optional]: Unique test ID, e.g. muid1.
-	local -r testVal="$2"           ## Arg <REQUIRED>: Test val, e.g. from output of a command.
-	local -r expectVal="$3"         ## Arg <REQUIRED>: Expected val.
-	local -r addComment="$4"        ## Arg [optional]: Brief comment to include in output.
-	local    outputStr=""
-	if [[ -n "${testID}" ]]; then
-		[[ "${__vAllTestIDs}" == *"y${testID}z"* ]] && fThrowError  "Unique test ID has been used already: '${testID}'."  "${FUNCNAME[0]}"
-		__vAllTestIDs="${__vAllTestIDs}y${testID}z"
-	fi
-	if [[ "${testVal}" == "${expectVal}" ]]; then
-		outputStr="Assertion ID '${testID}': Pass, test and expected values are the same: '${testVal}'"
-	else
-		outputStr="Assertion ID '${testID}': **FAIL**, test and expected values are NOT the same; '${testVal}' != '${expectVal}'."
-	fi
-	[[ -n "${addComment}" ]] && outputStr="${outputStr}  [${addComment}]"
-	fEcho_Clean "${outputStr}"
-	:;}
-fAssert_AreNotEqual(){
-	local -r testID="$1"            ## Arg [optional]: Unique test ID, e.g. muid1.
-	local -r testVal="$2"           ## Arg <REQUIRED>: Test val, e.g. from output of a command.
-	local -r expectWrongVal="$3"    ## Arg <REQUIRED>: Expected wrong val.
-	local -r addComment="$4"        ## Arg [optional]: Brief comment to include in output.
-	local    outputStr=""
-	if [[ -n "${testID}" ]]; then
-		[[ "${__vAllTestIDs}" == *"y${testID}z"* ]] && fThrowError  "Unique test ID has been used already: '${testID}'."  "${FUNCNAME[0]}"
-		__vAllTestIDs="${__vAllTestIDs}y${testID}z"
-	fi
-	if [[ "${testVal}" != "${expectWrongVal}" ]]; then
-		outputStr="Assertion ID '${testID}': Pass, test and expected incorrect value are the not the same; '${testVal}' != '${expectWrongVal}'."
-	else
-		outputStr="Assertion ID '${testID}': **FAIL**, test and expected values ARE the same: '${testVal}'"
-	fi
-	[[ -n "${addComment}" ]] && outputStr="${outputStr}  [${addComment}]"
-	fEcho_Clean "${outputStr}"
-	:;}
-fAssert_Eval_AreEqual(){
-	local -r testID="$1"            ## Arg [optional]: Unique test ID, e.g. muid1.
-	local -r expressionToEval="$2"  ## Arg <REQUIRED>: Exression to evaluate.
-	local -r expectVal="$3"         ## Arg <REQUIRED>: Expected val.
-	local -r addComment="$4"        ## Arg [optional]: Brief comment to include in output.
-	fAssert_AreEqual  "${testID}"  "$(eval "${expressionToEval}")"  "${expectVal}"  "${addComment}";:;}
-fAssert_Eval_ShouldError(){
-	local -r testID="$1"            ## Arg [optional]: Unique test ID, e.g. muid1.
-	local -r expressionToEval="$2"  ## Arg <REQUIRED>: Exression to evaluate.
-	local -r addComment="$3"        ## Arg [optional]: Brief comment to include in output.
-	local -i returnCode=0
-	local    outputStr=""
-	if [[ -n "${testID}" ]]; then
-		[[ "${__vAllTestIDs}" == *"y${testID}z"* ]] && fThrowError  "Unique test ID has been used already: '${testID}'."  "${FUNCNAME[0]}"
-		__vAllTestIDs="${__vAllTestIDs}y${testID}z"
-	fi
-	fDefineTrap_Error_Ignore
-		_ErrVal=0
-		eval "${expressionToEval}" &>/dev/null
-		returnCode=${_ErrVal}
-	fDefineTrap_Error_Fatal
-	if ((returnCode > 0)); then
-		outputStr="Assertion ID '${testID}': Pass, function errored as predicted."
-	else
-		outputStr="Assertion ID '${testID}': **FAIL**, function did not error as predicted."
-	fi
-	[[ -n "${addComment}" ]] && outputStr="${outputStr}  [${addComment}]"
-	fEcho_Clean "${outputStr}"
-	:;}
-fAssert_Eval_ShouldNotError(){
-	local -r testID="$1"            ## Arg [optional]: Unique test ID, e.g. muid1.
-	local -r expressionToEval="$2"  ## Arg <REQUIRED>: Exression to evaluate.
-	local -r addComment="$3"        ## Arg [optional]: Brief comment to include in output.
-	local -i returnCode=0
-	local    outputStr=""
-	if [[ -n "${testID}" ]]; then
-		[[ "${__vAllTestIDs}" == *"y${testID}z"* ]] && fThrowError  "Unique test ID has been used already: '${testID}'."  "${FUNCNAME[0]}"
-		__vAllTestIDs="${__vAllTestIDs}y${testID}z"
-	fi
-	fDefineTrap_Error_Ignore
-		_ErrVal=0
-		eval "${expressionToEval}" &>/dev/null
-		returnCode=${_ErrVal}
-	fDefineTrap_Error_Fatal
-	if ((returnCode == 0)); then
-		outputStr="Assertion ID '${testID}': Pass, function succeeded as predicted."
-	else
-		outputStr="Assertion ID '${testID}': **FAIL**, function errored."
-	fi
-	[[ -n "${addComment}" ]] && outputStr="${outputStr}  [${addComment}]"
-	fEcho_Clean "${outputStr}"
-	:;}
-
-
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ##	Group purpose ....: Generig debugging, tracing, and future profiling (minified).
 ##	Can be deleted? ..: Yes. There is no default template use of any of it.
 ##	Statefulness .....: Single global state.
@@ -1508,14 +1705,15 @@ fAssert_Eval_ShouldNotError(){
 ##	Dependents .......:
 ##	Dependencies .....:
 ##	Unit tests passed :
-declare -i -r _dbgIndentEachLevelBy=4
-declare -i    _dbgNestLevel=0
-declare -i    _dbgTemporarilyDisableEcho=0
+if ((doDebug)); then
+declare -ri _dbgIndentEachLevelBy=4
+declare  -i _dbgNestLevel=0
+declare  -i _dbgTemporarilyDisableEcho=0
 function fdbgEnter(){
 	if [[ ${doDebug} -eq 1 ]]; then
-		local    -r functionName="$1"
-		local    -r extraText="$2"
-		local -i    dontEchoToStdout=0; if [[ -n "$3" ]] && [[ $3 =~ ^[0-9]+$ ]]; then dontEchoToStdout=$3; fi
+		local    -r functionName="${1:-}"
+		local    -r extraText="${2:-}"
+		local -i    dontEchoToStdout=0; if [[ -n "${3:-}" ]] && [[ $3 =~ ^[0-9]+$ ]]; then dontEchoToStdout=$3; fi
 		local       output=""
 		if [[ -n "$functionName" ]]; then output=".$functionName()"; fi
 		output="Entered ${meName}${output}"
@@ -1527,9 +1725,9 @@ function fdbgEnter(){
 	fi ;:;}
 function fdbgEgress(){
 	if [[ ${doDebug} -eq 1 ]]; then
-		local    -r functionName="$1"
-		local    -r extraText="$2"
-		local -i    dontEchoToStdout=0; if [[ -n "$3" ]] && [[ $3 =~ ^[0-9]+$ ]]; then dontEchoToStdout=$3; fi
+		local    -r functionName="${1:-}"
+		local    -r extraText="${2:-}"
+		local -i    dontEchoToStdout=0; if [[ -n "${3:-}" ]] && [[ $3 =~ ^[0-9]+$ ]]; then dontEchoToStdout=$3; fi
 		local       output=""
 		_dbgNestLevel=$((_dbgNestLevel-1))
 		if [[ _dbgNestLevel -lt 0 ]]; then _dbgNestLevel=0; fi
@@ -1546,228 +1744,36 @@ function fdbgEcho(){
 	fi ;:;}
 function fdbgEchoVarAndVal(){
 	if [[ "${doDebug}" -eq 1 ]]; then
-		local -r varName="$1"
-		local -r optionalPrefix="$2"
+		local -r varName="${1:-}"
+		local -r optionalPrefix="${2:-}"
 		local    outputStr=""
 		if [[ -n "$optionalPrefix" ]]; then outputStr="$optionalPrefix"; fi
 		outputStr="${outputStr}${varName} = '${!varName}'"
 		fdbgEcho "$outputStr"
 	fi ;:;}
+fi
 
 
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....: Generic logging (minified).
-##	Can be deleted? ..: Yes. The only default template occurrence an fInit() is commented out.
-##	Statefulness .....: Single global state.
-##	Input ............:
-##	Function return...:
-##	Stdout ...........:
-##	StdErr ...........:
-##	Other side-effects:
-##	Notes:
-##		You can also write directly to log file yourself at any time after fLog_Init() or first fLog_Line() or fLog_Pipe(), and/or 'mv' the file after fLog_Cleanup().
-##			The only 'required' function you need to call for logging:
-##				fLog_Line()   E.g.: fLog_Line "Hello"
-##			Or for continuous streamed logging (even from function output):
-##				fLog_Pipe()   E.g.: fMyFunctionOrCommand | fLog_Pipe
-##			Other functions you can *optionally* invoke:
-##				fLog_GetFilespec() ................: If you want to know what the log filespec will be, before it's created.
-##				fLog_Init() .......................: If you want to explicitly init the logfile, but is not necessary.
-##				fLog_Cleanup() ....................: Not strictly necessary if you don't run as root, as it only updates file permissions to OG user.
-##	Dependents .......:
-##	Dependencies .....:
-##	Unit tests passed :
-declare -r -i maxLogfiles=10
-declare -r -i removeNullFilesNMinutesOld=1
-readonly      defaultLogMiddleSubdirs="var/log"
-declare       _vLog_Dir=""  _vLog_Filename=""  _vLog_Filespec=""  _vLog_WiledcardSpec=""  _vLog_Owner=""
-declare -i    _vLog_DidInitVars=0  _vLog_DidInitFsObjs=0
-fLog_GetFilespec(){
-	##	Purpose: Initializes everything and gives you the log filespec, without actually creating anything yet.
-	##	Args:
-	##		1 [REQUIRED]: varName      The variable to populate.
-	##		2 [optional]: LogDir       If not specified, defaults to "$(fGetOgUserHome)/var/log/${meName}"
-	##		3 [optional]: logFileName  If NOT specified, logfile rotation will work, and defaults to "${meName}_${serialDT}.log"
-	##		4 [optional]: Username for ownership and/or homedir calculation
-	##	Dependencies: fGetOgUserName(), fGetOgUserHome(), __pLog_InitVars()
-	local -n refVar=$1 ; shift || true
-	__pLog_InitVars  "$1"  "$2"  "$3"
-	refVar="${_vLog_Filespec}" ;:;}
-fLog_Init(){
-	##	Optional args:
-	##		1: LogDir       If not specified, defaults to "$(fGetOgUserHome)/var/log/${meName}"
-	##		2: logFileName  If NOT specified, logfile rotation will work, and defaults to "${meName}_${serialDT}.log"
-	##		3: Username for ownership and/or homedir calculation
-	##	Dependencies: fRemoveOldLogs(), __pLog_InitVars()
-	((_vLog_DidInitFsObjs)) && return 0
-	__pLog_InitVars  "$1"  "$2"  "$3"
-	if [[ ! -d "${_vLog_Dir}" ]]; then
-		mkdir -p "${_vLog_Dir}"
-		[[ "root" == "${USER,,}" ]] && chown ${_vLog_Owner}:${_vLog_Owner} "${_vLog_Dir}"
-	fi
-	[[ -n "${_vLog_WiledcardSpec}" ]] && fRemoveOldLogs  "${_vLog_Dir}"  "${_vLog_WiledcardSpec}"  $((maxLogfiles - 1))  $removeNullFilesNMinutesOld
-	touch "${_vLog_Filespec}"
-	_vLog_DidInitFsObjs=1 ;:;}
-fLog_Line(){
-	{ ((! _vLog_DidInitFsObjs)) || [[ -z "${_vLog_Filespec}" ]] || [[ ! -f "${_vLog_Filespec}" ]]; } && fLog_Init
-	echo -e "$(date "+%Y%m%d-%H%M%S")  $1" >> "${_vLog_Filespec}" ;:;}
-fLog_Pipe(){  ## Put this function after a pipe, to log all output of a command.
-	{ ((! _vLog_DidInitFsObjs)) || [[ -z "${_vLog_Filespec}" ]] || [[ ! -f "${_vLog_Filespec}" ]]; } && fLog_Init
-	while IFS= read -r nextLine; do echo -e "$(date "+%Y%m%d-%H%M%S")  ${nextLine}" >> "${_vLog_Filespec}"; done ;:;}
-fLog_Cleanup(){  ## Call after done logging, to clean-up log file permissions.
-	((! _vLog_DidInitFsObjs)) && fThrowError  "Log cleanup called but has not been initialized."  "${FUNCNAME[0]}"
-	[[ "root" == "${USER,,}" ]] && chown ${_vLog_Owner}:${_vLog_Owner} "${_vLog_Filespec}" ;:;}
-fLog_Reset(){ _vLog_Dir="" ; _vLog_Filename="" ; _vLog_Filespec="" ; _vLog_WiledcardSpec="" ; _vLog_Owner="" ; _vLog_DidInitVars=0 ; _vLog_DidInitFsObjs=0 ;:;}
-__pLog_InitVars(){
-	##	Used by: fLog_Init(), fLog_GetFilespec()
-	((_vLog_DidInitVars)) && return 0
-	local logDir="$1"
-	local logFileName="$2"
-	local userName="$3"
-	[[ -z "${userName}" ]] && fGetOgUserName userName
-	_vLog_Owner="${userName}"
-	if [[ -z "${logDir}"  ]]; then
-		local userHome=""; fGetOgUserHome userHome "${userName}"; local -r userHome="${userHome}"
-		logDir="${userHome}/${defaultLogMiddleSubdirs}/${meName}"
-	fi
-	_vLog_Dir="${logDir}"
-	local _vLog_WiledcardSpec=""
-	if [[ -z "${logFileName}" ]]; then
-		logFileName="${meName}_${serialDT}.log"
-		_vLog_WiledcardSpec="${meName}_*.log"
-	fi
-	_vLog_Filename="${logFileName}"
-	_vLog_Filespec="${_vLog_Dir}/${_vLog_Filename}"
-	_vLog_DidInitVars=1 ;:;}
 
 
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....: Generic error-handling (minified).
-##	Can be deleted? ..: Generally not - without also removing many generic functions that rely on it.
-##	Statefulness .....: Single global state.
-##	Input ............:
-##	Function return...:
-##	Stdout ...........:
-##	StdErr ...........:
-##	Other side-effects:
-##	Notes ............:
-##	Dependents .......:
-##	Dependencies .....:
-##	Unit tests passed :
-declare -i _wasCleanupRun=0
-declare -i _areDoingSoftErrors=0
-declare -i _ErrVal=0
-_fTrap_Exit(){
-	if [[ "${_wasCleanupRun}" == "0" ]]; then  ## String compare is less to fail than integer
-		_wasCleanupRun=1
-		_fSingleExitPoint "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}"
-	fi ;}
-_fTrap_Error(){
-	if [[ "${_wasCleanupRun}" == "0" ]]; then  ## String compare is less to fail than integer
-		_wasCleanupRun=1
-		fEcho_ResetBlankCounter
-		_fSingleExitPoint "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}"
-	fi ;}
-_fTrap_Error_Ignore(){ _ErrVal=1; true;  return 0; }
-_fTrap_Error_Soft(){   _ErrVal=1; false; return 1; }
-_fSingleExitPoint(){
-	local -r signal="$1"
-	local -r lineNum="$2"
-	local -r exitCode="$3"
-	local -r errMsg="$4"
-	local -r errCommand="$BASH_COMMAND"
-	_ErrVal=$exitCode
-	if [[ "${signal}" == "INT" ]]; then
-		fEcho_Force
-		echo "User interrupted." >&2
-		fEcho_ResetBlankCounter
-		fCleanup  ## User cleanup
-		exit 1
-	elif [[ "${exitCode}" != "0" ]] && [[ "${exitCode}" != "1" ]]; then  ## Clunky string compare is less likely to fail than integer
-		fEcho_Clean
-		echo -e "Signal .....: '${signal}'"    >&2
-		echo -e "Err# .......: '${exitCode}'"  >&2
-		echo -e "Message ....: '${errMsg}'"    >&2
-		echo -e "At line# ...: '${lineNum}'"   >&2
-		fEcho_Clean_Force
-		fCleanup  ## User cleanup
-	else
-		fCleanup  ## User cleanup
-	fi ;}
-fThrowError(){
-	local    errMsg="$1"
-	local -r funcName="$2"
-	local    meNameLocal="${meName}"
-	[[ -z "${errMsg}"      ]]                           && errMsg="An error occurred."
-#	[[ -z "${meNameLocal}" ]] && [[ -n "${funcName}" ]] && meNameLocal="${funcName}()"
-#	[[ -n "${meNameLocal}" ]] && [[ -n "${funcName}" ]] && meNameLocal="${meNameLocal}.${funcName}()"
-	[[ -n "${meNameLocal}" ]]                           && errMsg="${meNameLocal}: ${errMsg}"
-	local callStack=""
-	for (( i = 1; i < ${#FUNCNAME[@]}; i++ )); do
-		[[ "${FUNCNAME[i]}" == "main" ]] && continue
-		[[ -n "${callStack}" ]] && callStack="${callStack}, "
-		callStack="${callStack}${FUNCNAME[i]}()"
-	done
-	[[ -n "${callStack}" ]] && callStack="Reverse call stack: ${callStack}"
-	fEcho_Clean
-	echo -e "${errMsg}" >&2
-	echo -e "${callStack}" >&2
-	fEcho_ResetBlankCounter
-	_ErrVal=1
-	{ ((_areDoingSoftErrors)) && return 1; } || exit 1; }
-fDefineTrap_Error_Fatal(){  true; _ErrVal=0; _areDoingSoftErrors=0; trap '_fTrap_Error         ERR    ${LINENO}  $?  $_' ERR; set -eE; } #...: Standard; aborts script on error.
-fDefineTrap_Error_Soft(){   true; _ErrVal=0; _areDoingSoftErrors=1; trap '_fTrap_Error_Soft    ERR    ${LINENO}  $?  $_' ERR; set -eE; } #...: Doesn't abort or show error, but sets false and returns error code of 1 from function.
-fDefineTrap_Error_Ignore(){ true; _ErrVal=0; _areDoingSoftErrors=1; trap '_fTrap_Error_Ignore  ERR    ${LINENO}  $?  $_' ERR; set +eE; } #...: Eats errors and returns true.
-fDefineTrap_Error_Fatal
-trap '_fTrap_Error SIGHUP  ${LINENO} $? $_' SIGHUP
-trap '_fTrap_Error SIGINT  ${LINENO} $? $_' SIGINT    ## CTRL+C
-trap '_fTrap_Error SIGTERM ${LINENO} $? $_' SIGTERM
-trap '_fTrap_Exit  EXIT    ${LINENO} $? $_' EXIT
-trap '_fTrap_Exit  INT     ${LINENO} $? $_' INT
-trap '_fTrap_Exit  TERM    ${LINENO} $? $_' TERM
 
-
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-##	Group purpose ....: Generic echo-related functions (minified).
-##	Can be deleted? ..: NO; not without also removing many generic functions and template code that relies on it.
-##	Statefulness .....: Trivial single global state. (Only for count of blank lines output.)
-##	Input ............:
-##	Function return...:
-##	Stdout ...........:
-##	StdErr ...........:
-##	Other side-effects:
-##	Notes ............: The most useful feature about this collection, is by default not redundantly echoing
-##	                    repeated blank lines - which is tedious logic to recreate for every script.
-##	Dependents .......:
-##	Dependencies .....:
-##	Unit tests passed :
-declare -i _wasLastEchoBlank=0
-fEcho_Clean(){
-	if   [[ -n "$*" ]]         ; then echo -e "$*"; _wasLastEchoBlank=0
-	elif ((!_wasLastEchoBlank)); then echo ""     ; _wasLastEchoBlank=1; fi }
-# shellcheck disable=2120  ## References arguments, but none are ever passed; Just because this library function isn't called here, doesn't mean it never will in other scripts.
-fEcho()                   { if [[ -n "$*" ]]; then fEcho_Clean "[ $* ]"; else fEcho_Clean ""; fi; }
-fEcho_Force()             { fEcho_ResetBlankCounter; fEcho "$*";                                  }
-fEcho_Clean_Force()       { fEcho_ResetBlankCounter; fEcho_Clean "$*";                            }
-fEchoVarAndVal()          { fEcho_Clean "${2}${1} = '${!1}'";                                     }
-fEcho_ResetBlankCounter(){ _wasLastEchoBlank=0;                                                  }
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## Execution entry point (do not modify)
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 
-set -eE  ## This is redundant with error-handling setup above, but here just to be clear, and to show where to override with '+eE'.
+## Error and exit settings
+ set -u  ## Require variable declaration. Stronger than mere linting. But can struggle if functions are in sourced files.
+ set -e  #..........................................: Exit on errors. This is inconsistent (made a little better with settings below), so eventually may move to 'set +e' (which is more constant work and mental overhead).
+ set -E  #..........................................: Propagate ERR trap settings into functions, command substitutions, and subshells.
+ shopt -s inherit_errexit  #........................: Propagate 'set -e' ........ into functions, command substitutions, and subshells. Will fail on Bash <4.4.
+ set -o pipefail  #.................................: Make sure all stages of piped commands also fail the same.
 
-## Check if sourced.
-__pIsSourced(){
-	if [ -n "$ZSH_VERSION" ]; then
-		case $ZSH_EVAL_CONTEXT in *:file:*) return 0;; esac
-	else  # Add additional POSIX-compatible shell names here, if needed.
-		case ${0##*/} in dash|-dash|bash|-bash|ksh|-ksh|sh|-sh) return 0;; esac
-	fi
-	return 1 ;} # NOT sourced.
-declare -i isSourced=0; __pIsSourced && isSourced=1 || isSourced=0; declare -ri isSourced=$isSourced
+## Check if sourced
+declare -i isSourced
+(return 0 2>/dev/null) && isSourced=1 || isSourced=0
+declare -ri isSourced=$isSourced
 
 ## Generic global variables that shouldn't be changed.
 declare -r mePath="${0}"
@@ -1776,12 +1782,12 @@ declare -r serialDT="$(date "+%Y%m%d-%H%M%S")"
 declare -r reentrantKey="yn51wXTOLh8PmYH04FW7m3Fmxp3sif5e"  ## Not a security thing, just teensy extra effort to make sure we know we want to run reentrantly as sudo.
 
 ## Startup routing.
-if [[ $1 =~ -(unittest|unitest|unit-test|test|test)-(t|g) ]] && fIsFunction fUnitTest_Toolbox; then  ## '--unittest-toolbox'
-	fUnitTest_Toolbox "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}" "${33}"
-elif [[ $1 =~ -(unittest|unitest|unit-test) ]] && fIsFunction fUnitTest_User; then ## '--unittest'
-	fUnitTest_User "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}" "${33}"
-elif [[ "${1}" == "REENTRANT_${reentrantKey}" ]]; then ## Reentrant as sudo or another user, run function defined it $2
-	$2 "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}" "${33}" "${34}"
+if [[ "${1:-}" =~ -(unittest|unitest|unit-test|test|test)-(t|g) ]] && fIsFunction fUnitTest_Toolbox; then  ## '--unittest-toolbox'
+	fUnitTest_Toolbox "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}" "${33:-}"
+elif [[ "${1:-}" =~ -(unittest|unitest|unit-test) ]] && fIsFunction fUnitTest_User; then ## '--unittest'
+	fUnitTest_User "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}" "${33:-}"
+elif [[ "${1:-}" == "REENTRANT_${reentrantKey}" ]]; then ## Reentrant as sudo or another user, run function defined it $2
+	$2 "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}" "${33:-}" "${34:-}"
 else ## Regular
-	fInit "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" "${21}" "${22}" "${23}" "${24}" "${25}" "${26}" "${27}" "${28}" "${29}" "${30}" "${31}" "${32}"
+	fInit "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
 fi

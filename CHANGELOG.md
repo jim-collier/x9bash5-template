@@ -61,6 +61,8 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 - Moved some function groups around so that the two most core, integral groups [e.g. fEcho*() and error-handling] are at the bottom in their own group, but in otherwise in the main generic section, the easiest to delete appears lowest.
 - Added function group header fields 'Can be deleted?' and 'Statefulness'.
 - Moved error-handling set-up directly underneath error-handling functions.
+- Added fDefineTrap_Error_ExitOnThrow() for future use with 'set +e' (which will probably never migrate too as the developer overhead is too damn high).
+	- Instead, significantly mitigate with `set -e` with `set -E`, `set -o pipefail`, and `shopt -s inherit_errexit`.
 
 
 ### Removed

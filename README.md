@@ -48,7 +48,9 @@
 
 ## Coding style
 
-Here is the author's [Bash 5 coding style document](https://github.com/jim-collier/bash_v5_code-style/blob/main/CODE_STYLE.md). This template helps you follow Bash best-practices.
+Here is the author's [Bash 5 Ultimate Guide](https://github.com/jim-collier/bash-5-ultimate-guide/blob/main/bash-5-ultimate-guide.md).
+
+This template helps you follow those best-practices.
 
 
 ## Copyright and license

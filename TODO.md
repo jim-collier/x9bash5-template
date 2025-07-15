@@ -7,8 +7,19 @@
 | 20250711    |        | 5 |             |     |               | Finish fTimer_*() functions. | Blocked by some math functions which are now done.
 | 20250711    |        | 5 | 20250706    | JC  |               | Finish fFilesys_*() functions. | Blocked by fTimer_*().
 | 20250711    |        | 3 | 20250706    | JC  |               | For most generic functions, detect missing use of *nameref* variables by calling functions - for wich native Bash gives a cryptic, useless error message. | Eg: `[[ -v $1 ]] \|\| fThrowError "${errMissingRef_Alter_AssocArray}"`
-| 20250711    |        | 5 | 20250706    | JC  |               | Make sure generic functions observe performance guidelines from bash5-style-guide, and document intentional exceptions.
-| 20250711    |        | 5 | 20250706    | JC  |               | Make sure entire template observes style guidelines from bash5-style-guide, and document intentional exceptions.
+| 20250715    |        | 3 |             |     |               | Add functions that 'safe-escape' and de-safe-escape' strings.
+| 20250715    |        | 4 |             |     |               | Performance: Replace `sed` commands with Bash variable string manipulation wherever possible.
+| 20250715    |        | 4 |             |     |               | Performance: For what's left, group adjacent `sed` commands into one.
+| 20250715    |        | 4 |             |     |               | Performance: Avoid unnecessary use of e.g. 'true' and ':' (subprocces)
+| 20250715    |        | 4 |             |     |               | Performance: Reduce use of `grep`
+| 20250715    |        | 4 |             |     |               | Performance: Reduce use of `awk`
+| 20250715    |        | 4 |             |     |               | Performance: Reduce use of piped commands
+| 20250715    |        | 4 |             |     |               | Performance: Reduce use of command substitution, `$(...)`
+| 20250715    |        | 4 |             |     |               | Performance: Reduce use of process substitution, `<(...)`
+| 20250715    |        | 3 |             |     |               | Always use double brackets rather than single
+| 20250715    |        | 3 |             |     |               | For ternary operators with braces
+| 20250711    |        | 5 | 20250706    | JC  |               | Make sure generic functions observe remaining performance guidelines from bash5 guide, and document intentional exceptions.
+| 20250711    |        | 5 | 20250706    | JC  |               | Make sure entire template observes style guidelines from bash5 guide, and document intentional exceptions.
 | 20250711    |        | 2 | 20250706    | JC  |               | Make sure each function has a group or individual header.
 | 20250711    |        | 2 | 20250706    | JC  |               | Make sure each function make sure arguments are commented.
 | 20250711    |        | 2 | 20250706    | JC  |               | Make sure each function has arg comments | E.g. `Arg <REQUIRED>\|[optional]: Description`.

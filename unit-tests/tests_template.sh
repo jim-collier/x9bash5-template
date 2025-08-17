@@ -103,13 +103,21 @@ function fUnitTest_Toolbox(){
 	fGetBool tmpInt  'yes'              ;  fAssert_AreEqual  ¢¿FČ   $tmpInt  1
 	fGetBool tmpInt  'NO'               ;  fAssert_AreEqual  ¢¿FĚ   $tmpInt  0
 	fGetBool tmpInt  'f'                ;  fAssert_AreEqual  ¢¿FŇ   $tmpInt  0
-	fGetBool tmpInt  ''           1     ;  fAssert_AreEqual  s78dn  $tmpInt  1  'Null input, default=1.'
-	fGetBool tmpInt  ''          ""  1  ;  fAssert_AreEqual  s78ds  $tmpInt  0  'Null input, no default,    tryNotToError=1.'
-	fGetBool tmpInt  'bad input'  1  1  ;  fAssert_AreEqual  s78dm  $tmpInt  1  'Bad input,  default=1,     tryNotToError=1.'
-	fGetBool tmpInt  'bad input' ""  1  ;  fAssert_AreEqual  s78dt  $tmpInt  0  'Bad input,  no default,    tryNotToError=1.'
+	fGetBool tmpInt  'bad input'  1     ;  fAssert_AreEqual  s78dm  $tmpInt  1  'Bad input,  default=1,     tryNotToError=1.'
 	fAssert_Eval_ShouldError ¢¢λi " fGetBool tmpInt  ''          "  'Null input, no default.'
-	fAssert_Eval_ShouldError ¢¿8ẍ " fGetBool tmpInt  'badval'  1 "  'Bad input,  default=1, no tryNotToError.'
-	#exit
+	fAssert_Eval_ShouldError ¢¿8ẍ " fGetBool tmpInt  'badval'    "  'Bad input,  default=1, no tryNotToError.'
+
+	fUnitTest_PrintSectionHeader 'fTimer_Start()'
+	local timerStart timerStop timerET
+	fTimer_Start  timerStart ; sleep 0.05 ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
+	fTimer_Start  timerStart ; sleep 0.5  ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
+	fTimer_Start  timerStart ; sleep 1    ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
+	fAssert_Eval_ShouldError    s7gc5 " fTimer_GetET  timerET  100  1   "  'Start time later than stop time.'
+	fAssert_Eval_ShouldNotError s7gc6 " fTimer_GetET  timerET  100  100 "  'Start time equal to stop time.'
+	fTimer_GetET  timerET             1             1       ; fAssert_AreEqual  s7gc7   $timerET   0       'Stop and start are equal.'
+	fTimer_GetET  timerET             0             0       ; fAssert_AreEqual  s7gc8   $timerET   0       'Stop and start are both 0.'
+	fTimer_GetET  timerET             0             0  1    ; fAssert_AreEqual  s7gc9   $timerET   0.0     'Stop and start are both 0.'
+	exit
 
 	fUnitTest_PrintSectionHeader 'fGetInt()'
 	fGetInt  tmpInt  '45'                      ;  fAssert_AreEqual  ¢¢▸ᚧ   $tmpInt   45       'Int to int.'

@@ -1,0 +1,40 @@
+
+
+##	Function Purpose .: Purpose.
+##	Input ............: <ref: caller variable to put return value in>  <str: input>  [str: default value if null or garbage]
+##	Return num .......: >0 on error, if no default value specified. 
+##	StdOut ...........: [nothing]
+##	StdErr ...........: Text on error, if no default value specified.
+##	Other side-effects: [none]
+##	Statefulness .....: Stateless. Includes global default settings which can be overridden via function arguments.
+##	Minified? ........: Yes, readably
+##	Notes ............: 
+##	Example[s] .......: 
+##	Dependents .......: 
+##	Dependencies .....: 
+##	Unit tests passed : 
+
+##	Input ............: <byref caller variable to modify in-situ>
+##	Input ............: <ref: caller variable to modify in-situ>
+
+##	Statefulness .....: Stateless. Includes global default settings which can be overridden via function arguments.
+
+##	Return num .......: [0 by intention, but possibly >0 if external tool(s) error]
+##	StdOut ...........: [nothing]
+##	StdErr ...........: [nothing by intention, but possibly error messages from external tool(s)]
+
+
+
+##	Group name .......:
+##	Purpose ..........: Group purpose.
+##	Side-effects .....: StdOut. StdErr. Writes to known files. Adds to variable[s] to script environment.
+##	Statefulness .....: 
+##	Can be deleted? ..: 
+##	Minified? ........: Yes, readably
+##	Notes ............:
+##	Contract .........: User script must implement a 'fCleanup()' function, that takes no arguments.
+##	Dependents .......:
+##	Dependencies .....:
+##	Unit tests passed :
+
+fBigMath(), fTimer_GetET(), Numeric function constants

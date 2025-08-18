@@ -29,13 +29,41 @@ function fUnitTest_Toolbox(){
 	local -i tmpInt=0
 	local    tmpStr=""
 
+	fUnitTest_PrintSectionHeader 'fIsBool()'
+	fAssert_Eval_AreEqual  s8hds  '{ fIsBool   1      && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8hdt  '{ fIsBool   0      && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8hdu  '{ fIsBool   500    && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8he5  '{ fIsBool   -1     && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8hdv  '{ fIsBool   true   && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8hdw  '{ fIsBool   false  && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8hdx  '{ fIsBool   bob    && echo Y; } || echo N'  'N'
+	fAssert_Eval_AreEqual  s8hdy  '{ fIsBool   Y      && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8hdz  '{ fIsBool   N      && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8he0  '{ fIsBool   T      && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8he1  '{ fIsBool   f      && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8he2  '{ fIsBool   yes    && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8he3  '{ fIsBool   no     && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8he4  '{ fIsBool   ''     && echo Y; } || echo N'  'N'
+	#exit
+
+	fUnitTest_PrintSectionHeader '__pGetX_common()'
+	tmpStr='45.5'                             ; __pGetX_common  tmpStr ; fAssert_AreEqual  s8hk5  "${tmpStr}"                    45.5
+	tmpStr='-45.5x'                           ; __pGetX_common  tmpStr ; fAssert_AreEqual  s8hk6  "${tmpStr}"                   -45.5
+	tmpStr='+45.5x'                           ; __pGetX_common  tmpStr ; fAssert_AreEqual  s8hk7  "${tmpStr}"                    45.5
+	tmpStr='45.5%'                            ; __pGetX_common  tmpStr ; fAssert_AreEqual  s8hk8  "${tmpStr}"                     0.455
+	tmpStr='$45.5'                            ; __pGetX_common  tmpStr ; fAssert_AreEqual  s8hma  "${tmpStr}"                    45.5
+	tmpStr='-$45.5'                           ; __pGetX_common  tmpStr ; fAssert_AreEqual  s8hmb  "${tmpStr}"                   -45.5
+	tmpStr='12345678901234567890.0123456789'  ; __pGetX_common  tmpStr ; fAssert_AreEqual  s8hk9  "${tmpStr}"  12345678901234567890.0123456789
+	#exit
+
 	fUnitTest_PrintSectionHeader 'fIsInt()'
 	fAssert_Eval_AreEqual  ¢§YI   '{ fIsInt   123     && echo Y; } || echo N'  'Y'
 	fAssert_Eval_AreEqual  ¢§Yẑ   '{ fIsInt   123.    && echo Y; } || echo N'  'Y'  'Trailing decimal point is OK.'
 	fAssert_Eval_AreEqual  ¢¿Bď   '{ fIsInt  -123     && echo Y; } || echo N'  'Y'
-	fAssert_Eval_AreEqual  ¢§YẼ   '{ fIsInt   x123    && echo Y; } || echo N'  'N'
+	fAssert_Eval_AreEqual  ¢§YẼ   '{ fIsInt   x123    && echo Y; } || echo N'  'Y'
+	fAssert_Eval_AreEqual  s8hnc  '{ fIsInt   Sand    && echo Y; } || echo N'  'N'
 	fAssert_Eval_AreEqual  s78k0  '{ fIsInt  \$123    && echo Y; } || echo N'  'Y'  '$ and other currency symbols are OK.'
-	fAssert_Eval_AreEqual  s78k1  '{ fIsInt    123%   && echo Y; } || echo N'  'N'  '% is inherently not an integer.'
+	fAssert_Eval_AreEqual  s78k1  '{ fIsInt    123%   && echo Y; } || echo N'  'Y'  '= 1 after conversion.'
 	#exit
 
 	fUnitTest_PrintSectionHeader  'fIsNum()'
@@ -45,7 +73,7 @@ function fUnitTest_Toolbox(){
 	fAssert_Eval_AreEqual  ¢¿BĪ   '{ fIsNum        -.023    && echo Y; } || echo N'  'Y'
 	fAssert_Eval_AreEqual  ¢¿BȲ   '{ fIsNum       -1.023    && echo Y; } || echo N'  'Y'
 	fAssert_Eval_AreEqual  ¢¿Bē   '{ fIsNum      xyz        && echo Y; } || echo N'  'N'
-	fAssert_Eval_AreEqual  ¢¿Bū   '{ fIsNum    x123z        && echo Y; } || echo N'  'N'
+	fAssert_Eval_AreEqual  s8hne  '{ fIsNum    x123z        && echo Y; } || echo N'  'Y'
 	fAssert_Eval_AreEqual  ¢¿Xᛏ   '{ fIsNum         .1      && echo Y; } || echo N'  'Y'
 	fAssert_Eval_AreEqual  ¢¿Xᛝ   '{ fIsNum        1.       && echo Y; } || echo N'  'Y'
 	fAssert_Eval_AreEqual  s78gr  '{ fIsNum  '-1,112.58'    && echo Y; } || echo N'  'Y'  'With comma.'
@@ -56,13 +84,13 @@ function fUnitTest_Toolbox(){
 	#exit
 
 	fUnitTest_PrintSectionHeader 'fIsVal1_gt_Val2()'
-	fAssert_Eval_AreEqual  ¢§bŕ  "{ fIsVal1_gt_Val2  2      1           && echo Y; } || echo N"  'Y'
-	fAssert_Eval_AreEqual  ¢§eM  "{ fIsVal1_gt_Val2  1.1    2.1         && echo Y; } || echo N"  'N'
-	fAssert_Eval_AreEqual  ¢§eO  "{ fIsVal1_gt_Val2  1.1    2.1         && echo Y; } || echo N"  'N'
+	fAssert_Eval_AreEqual  ¢§bŕ  "{ fIsVal1_gt_Val2  2      1            && echo Y; } || echo N"  'Y'
+	fAssert_Eval_AreEqual  ¢§eM  "{ fIsVal1_gt_Val2  1.1    2.1          && echo Y; } || echo N"  'N'
+	fAssert_Eval_AreEqual  ¢§eO  "{ fIsVal1_gt_Val2  1.1    2.1          && echo Y; } || echo N"  'N'
 	fAssert_Eval_AreEqual  ¢¿Bㅸ  "{ fIsVal1_gt_Val2   .1    0.01        && echo Y; } || echo N"  'Y'
 	fAssert_Eval_AreEqual  ¢¿Bッ  "{ fIsVal1_gt_Val2  3      3           && echo Y; } || echo N"  'N'
 	fAssert_Eval_AreEqual  ¢¿Bぇ  "{ fIsVal1_gt_Val2  1     -3           && echo Y; } || echo N"  'Y'
-	fAssert_Eval_AreEqual  ¢¿Tč  "{ fIsVal1_gt_Val2  x     y           && echo Y; } || echo N"  'N'   'Works on text too.'
+	fAssert_Eval_AreEqual  ¢¿Tč  "{ fIsVal1_gt_Val2  x     y             && echo Y; } || echo N"  'N'   'Works on text too.'
 	#exit
 
 	fUnitTest_PrintSectionHeader 'fIsVal1_lt_Val2()'
@@ -82,42 +110,42 @@ function fUnitTest_Toolbox(){
 	#exit
 
 	fUnitTest_PrintSectionHeader 'fGetMinVal()'
-	fGetMinVal  tmpStr  20032.00023    5     ; fAssert_AreEqual  ¢§h⍤  $tmpStr  5
-	fGetMinVal  tmpStr      -.00023    1.1   ; fAssert_AreEqual  ¢§h⍋  $tmpStr  -.00023
-	fGetMinVal  tmpStr    xyz        abc     ; fAssert_AreEqual  ¢¿7Û  $tmpStr  abc   'Works on text too.'
+	fGetMinVal  tmpStr  20032.00023    5     ; fAssert_AreEqual  ¢§h⍤  "${tmpStr}"  5
+	fGetMinVal  tmpStr      -.00023    1.1   ; fAssert_AreEqual  ¢§h⍋  "${tmpStr}"  -.00023
+	fGetMinVal  tmpStr    xyz        abc     ; fAssert_AreEqual  ¢¿7Û  "${tmpStr}"  abc   'Works on text too.'
 	#exit
 
 	fUnitTest_PrintSectionHeader 'fGetMaxVal()'
-	fGetMaxVal  tmpStr  20032.00023    5     ; fAssert_AreEqual  ¢¿7Ϡ  $tmpStr  20032.00023
-	fGetMaxVal  tmpStr    xyz          1.1   ; fAssert_AreEqual  ¢¿7Ω  $tmpStr    xyz   'Works on text & numbers too.'
+	fGetMaxVal  tmpStr  20032.00023    5     ; fAssert_AreEqual  ¢¿7Ϡ  "${tmpStr}"  20032.00023
+	fGetMaxVal  tmpStr    xyz          1.1   ; fAssert_AreEqual  ¢¿7Ω  "${tmpStr}"    xyz   'Works on text & numbers too.'
 	#exit
 
 	fUnitTest_PrintSectionHeader 'fGetBool()'
-	fGetBool tmpInt   1                 ;  fAssert_AreEqual  ¢¢wŚ   $tmpInt  1
-	fGetBool tmpInt  -1                 ;  fAssert_AreEqual  ¢¿FĒ   $tmpInt  1
-	fGetBool tmpInt   5                 ;  fAssert_AreEqual  ¢¿FŌ   $tmpInt  1
-	fGetBool tmpInt   0                 ;  fAssert_AreEqual  ¢¿Fď   $tmpInt  0
-	fGetBool tmpInt  'true'             ;  fAssert_AreEqual  ¢¿FȲ   $tmpInt  1
-	fGetBool tmpInt  't'                ;  fAssert_AreEqual  ¢¿Fē   $tmpInt  1
-	fGetBool tmpInt  'y'                ;  fAssert_AreEqual  ¢¿Fō   $tmpInt  1
-	fGetBool tmpInt  'yes'              ;  fAssert_AreEqual  ¢¿FČ   $tmpInt  1
-	fGetBool tmpInt  'NO'               ;  fAssert_AreEqual  ¢¿FĚ   $tmpInt  0
-	fGetBool tmpInt  'f'                ;  fAssert_AreEqual  ¢¿FŇ   $tmpInt  0
-	fGetBool tmpInt  'bad input'  1     ;  fAssert_AreEqual  s78dm  $tmpInt  1  'Bad input,  default=1,     tryNotToError=1.'
+	fGetBool tmpInt   1                 ;  fAssert_AreEqual  ¢¢wŚ   "${tmpInt}"  1
+	fGetBool tmpInt  -1                 ;  fAssert_AreEqual  ¢¿FĒ   "${tmpInt}"  1
+	fGetBool tmpInt   5                 ;  fAssert_AreEqual  ¢¿FŌ   "${tmpInt}"  1
+	fGetBool tmpInt   0                 ;  fAssert_AreEqual  ¢¿Fď   "${tmpInt}"  0
+	fGetBool tmpInt  'true'             ;  fAssert_AreEqual  ¢¿FȲ   "${tmpInt}"  1
+	fGetBool tmpInt  't'                ;  fAssert_AreEqual  ¢¿Fē   "${tmpInt}"  1
+	fGetBool tmpInt  'y'                ;  fAssert_AreEqual  ¢¿Fō   "${tmpInt}"  1
+	fGetBool tmpInt  'yes'              ;  fAssert_AreEqual  ¢¿FČ   "${tmpInt}"  1
+	fGetBool tmpInt  'NO'               ;  fAssert_AreEqual  ¢¿FĚ   "${tmpInt}"  0
+	fGetBool tmpInt  'f'                ;  fAssert_AreEqual  ¢¿FŇ   "${tmpInt}"  0
+	fGetBool tmpInt  'bad input'  1     ;  fAssert_AreEqual  s78dm  "${tmpInt}"  1  'Bad input,  default=1,     tryNotToError=1.'
 	fAssert_Eval_ShouldError ¢¢λi " fGetBool tmpInt  ''          "  'Null input, no default.'
 	fAssert_Eval_ShouldError ¢¿8ẍ " fGetBool tmpInt  'badval'    "  'Bad input,  default=1, no tryNotToError.'
 
-	fUnitTest_PrintSectionHeader 'fTimer_Start()'
-	local timerStart timerStop timerET
-	fTimer_Start  timerStart ; sleep 0.05 ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
-	fTimer_Start  timerStart ; sleep 0.5  ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
-	fTimer_Start  timerStart ; sleep 1    ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
-	fAssert_Eval_ShouldError    s7gc5 " fTimer_GetET  timerET  100  1   "  'Start time later than stop time.'
-	fAssert_Eval_ShouldNotError s7gc6 " fTimer_GetET  timerET  100  100 "  'Start time equal to stop time.'
-	fTimer_GetET  timerET             1             1       ; fAssert_AreEqual  s7gc7   $timerET   0       'Stop and start are equal.'
-	fTimer_GetET  timerET             0             0       ; fAssert_AreEqual  s7gc8   $timerET   0       'Stop and start are both 0.'
-	fTimer_GetET  timerET             0             0  1    ; fAssert_AreEqual  s7gc9   $timerET   0.0     'Stop and start are both 0.'
-	exit
+	fUnitTest_PrintSectionHeader 'fSplitStr()'
+	local leftStr  rightStr
+	fSplitStr  leftStr  rightStr  '12.5'    '.'             ; fAssert_AreEqual  s8he6  "${leftStr}"   '12'      ''  ; fAssert_AreEqual  s8he7  "${rightStr}"   '5'  ''
+	fSplitStr  leftStr  rightStr  '12'      '.'             ; fAssert_AreEqual  s8he8  "${leftStr}"   '12'      ''  ; fAssert_AreEqual  s8he9  "${rightStr}"   ''   ''
+	fSplitStr  leftStr  rightStr    '.5'    '.'             ; fAssert_AreEqual  ¢ẄKV   "${leftStr}"    ''       ''  ; fAssert_AreEqual  ¢ẄKh   "${rightStr}"   '5'  ''
+	fSplitStr  leftStr  rightStr  '12xyz5'  'xyz'           ; fAssert_AreEqual  ¢ẄKû   "${leftStr}"   '12'      ''  ; fAssert_AreEqual  ¢ẄKÃ   "${rightStr}"   '5'  ''
+	fSplitStr  leftStr  rightStr  '12xyz5'  'xyzp'          ; fAssert_AreEqual  ¢ẄKǧ   "${leftStr}"   '12xyz5'  ''  ; fAssert_AreEqual  ¢ẄKǒ   "${rightStr}"   ''   ''
+	fSplitStr  leftStr  rightStr  '12.5'    'xyzp'          ; fAssert_AreEqual  ¢ẄLY   "${leftStr}"   '12.5'    ''  ; fAssert_AreEqual  ¢ẄLq   "${rightStr}"   ''   ''
+	fSplitStr  leftStr  rightStr  '12.5'    ''              ; fAssert_AreEqual  ¢ẄLĈ   "${leftStr}"   '12.5'    ''  ; fAssert_AreEqual  ¢ẄLŜ   "${rightStr}"   ''   ''
+	fSplitStr  leftStr  rightStr  ''        '.'             ; fAssert_AreEqual  ¢ẄLẐ   "${leftStr}"   ''        ''  ; fAssert_AreEqual  ¢ẄLĝ   "${rightStr}"   ''   ''
+	#exit
 
 	fUnitTest_PrintSectionHeader 'fGetInt()'
 	fGetInt  tmpInt  '45'                      ;  fAssert_AreEqual  ¢¢▸ᚧ   $tmpInt   45       'Int to int.'
@@ -144,6 +172,7 @@ function fUnitTest_Toolbox(){
 	fGetInt  tmpInt  '- \$ 100'                ;  fAssert_AreEqual  s78gl  $tmpInt  -100       '- \$'
 	fGetInt  tmpInt  ' \$ -100'                ;  fAssert_AreEqual  s78gm  $tmpInt  -100       ' \$ -'
 	fGetInt  tmpInt  -159.9%                   ;  fAssert_AreEqual  s78gn  $tmpInt  -1         '-%'
+	fGetInt  tmpInt   1159.9%                  ;  fAssert_AreEqual  s8hmc  $tmpInt   11        '%'
 	fGetInt  tmpInt  'badval'         100      ;  fAssert_AreEqual  s78th  $tmpInt  100        'Bad input with default value.'
 	fAssert_Eval_ShouldError  s77f5  "fGetInt  tmpInt  'badval'"     'Bad input'
 	#exit
@@ -161,6 +190,7 @@ function fUnitTest_Toolbox(){
 	fGetNum  tmpStr  +45,687,687.1111111111111111111111  2           ;  fAssert_AreEqual  s78v8  $tmpStr   45687687.11  'With +'
 	fGetNum  tmpStr  ''                                  0  3        ;  fAssert_AreEqual  ¢§š8   $tmpStr   3   'Specified default with null.'
 	fGetNum  tmpStr  ''                                 ''  1        ;  fAssert_AreEqual  ¢§šG   $tmpStr   1   'Specified default with null.'
+	fGetNum  tmpStr  '45.5%'                                         ;  fAssert_AreEqual  s8hkv  $tmpStr   0.455   '%'
 	fGetNum  tmpStr  'badval'                           ''  0        ;  fAssert_AreEqual  s78tz  $tmpStr   0   'Return default with bad value'
 	fGetNum  tmpStr  'badval'                           3   1.1997   ;  fAssert_AreEqual  ¢§šI   $tmpStr   1.2 'Return default with bad value'
 	fAssert_Eval_ShouldError ¢§šQ "fGetNum  tmpInt  'badval'"     ## Error: Bad input
@@ -192,6 +222,27 @@ function fUnitTest_Toolbox(){
 	tmpStr='-111,111,111,111,111.58'   ; fRoundNum  tmpStr   0  ; fAssert_AreEqual  s78h1  $tmpStr  -111111111111112  'Rounding negative number can be tricky.'
 	fAssert_Eval_ShouldError  ¢¿Wū  'tmpStr=xyz;  fRoundNum  tmpStr  3'  'Text input'
 	#exit
+
+	fUnitTest_PrintSectionHeader 'fGetFormattedNum()'
+	fGetFormattedNum  tmpStr         '1000'              ;  fAssert_AreEqual  s8hej   "${tmpStr}"        '1,000'
+	fGetFormattedNum  tmpStr        '1,000'              ;  fAssert_AreEqual  s8hek   "${tmpStr}"        '1,000'
+	fGetFormattedNum  tmpStr        '-1000'              ;  fAssert_AreEqual  s8hel   "${tmpStr}"       '-1,000'
+	fGetFormattedNum  tmpStr      '-$1,000'              ;  fAssert_AreEqual  s8hem   "${tmpStr}"       '-1,000'
+	fGetFormattedNum  tmpStr        '+1000'              ;  fAssert_AreEqual  s8hen   "${tmpStr}"        '1,000'
+	fGetFormattedNum  tmpStr  '-1234567890.0123456789%'  ;  fAssert_AreEqual  s8heo   "${tmpStr}"  '-12,345,678.900123456789'
+	exit
+
+	fUnitTest_PrintSectionHeader 'fTimer_Start()'
+	local timerStart timerStop timerET
+	fTimer_Start  timerStart ; sleep 0.05 ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
+	fTimer_Start  timerStart ; sleep 0.5  ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
+	fTimer_Start  timerStart ; sleep 1    ; fTimer_Stop  timerStop; fTimer_GetET  timerET  "${timerStart}"  "${timerStop}"; fEchoVarAndVal timerET
+	fAssert_Eval_ShouldError    s7gc5 " fTimer_GetET  timerET  100  1   "  'Start time later than stop time.'
+	fAssert_Eval_ShouldNotError s7gc6 " fTimer_GetET  timerET  100  100 "  'Start time equal to stop time.'
+	fTimer_GetET  timerET             1             1       ; fAssert_AreEqual  s7gc7   $timerET   0       'Stop and start are equal.'
+	fTimer_GetET  timerET             0             0       ; fAssert_AreEqual  s7gc8   $timerET   0       'Stop and start are both 0.'
+	fTimer_GetET  timerET             0             0  1    ; fAssert_AreEqual  s7gc9   $timerET   0.0     'Stop and start are both 0.'
+	exit
 
 	fUnitTest_PrintSectionHeader 'fMath()'
 	fMath     tmpStr  '7*3/(2^4)'    ; fAssert_AreEqual     ¢§ㅊẑ   $tmpStr  1.3125
@@ -403,4 +454,4 @@ function fUnitTest_Toolbox(){
 #	fAssert_Eval_ShouldNotError                         Muid  "fFuncName 'good arg'"
 :;}
 
-source ../bash5-template.sh --unit-test-template
+source ./bash5-template.sh --unit-test-template

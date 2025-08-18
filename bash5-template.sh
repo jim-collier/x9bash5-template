@@ -868,12 +868,12 @@ fIsUser(){ { [[ -z "${1:-}" ]] && return 3; } || getent passwd "${1:-}" &>/dev/n
 ##	Unit tests passed :
 fIsBool (){
 	##	Unit tests passed, code minified on: 20250704.
-	local -n  inputVal="${1:-}"
-	local  -i retVal=0
+	local -r  inputVal="${1:-}"
+	local  -i retVal=1  ## 1 for function return means fail
 	case "${inputVal,,}" in
-		"1"|"true"|"yes"|"y"|"t")  retVal=1  ;;
-		"0"|"false"|"no"|"n"|"f")  retVal=1  ;;
-		*) fIsInt "${inputVal}" && retVal=$((arg_inputVal != 0)) ;;
+		"1"|"true"|"yes"|"y"|"t")                retVal=0  ;;  ## 0 for function return means success.
+		"0"|"false"|"no"|"n"|"f")                retVal=0  ;;  ## 0 for function return means success.
+		*) [[ "${inputVal}" =~ ^\-?[0-9]+$ ]] && retVal=0  ;;  ## 0 for function return means success.
 	esac
 	return $retVal
 }
@@ -888,8 +888,9 @@ fIsBool (){
 ##	Notes ............: If there are digits AFTER a decimal, then it's not considered an int. Numbers with multiple '+/-' delimiters, or in the wrong place, aren't ints.
 ##	Dependencies .....: [none]
 ##	Dependents .......: fGetBool()
-##	Unit tests passed : 20250708
-fIsInt (){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##"  <<<  "${1:-}" | grep  -qP  '^[+-]?[0-9]+\.?$'; }
+##	Unit tests passed : 20250708 [old], 20250817-160331
+#fIsInt (){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##"  <<<  "${1:-}" | grep  -qP  "^[+\-]?[0-9]+${sep_decimal_escaped}?\$"; }
+fIsInt (){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-?[1-9]+ ]]; }
 
 ##	Function purpose .: Test if input is a fairly raw number, integer or decimal. Currency symbols, +/-, %, and thousands separators are ok.
 ##	Input ............: <str: test value>
@@ -902,7 +903,8 @@ fIsInt (){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]#
 ##	Dependencies .....: [none]
 ##	Dependents .......: fRoundNum()
 ##	Unit tests passed : 20250708
-fIsNum (){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##; s#\.##;"  <<<  "${1:-}" | grep  -qP  '^-?[0-9]+%?$' ; }
+#fIsNum (){ sed "s#${sep_thousands}##g; s#[${currencySymbols_escaped}]##; s#${sep_decimal_escaped}##;"  <<<  "${1:-}" | grep  -qP  "^[+\-]?[0-9]+%?\$" ; }
+fIsNum (){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-?[0-9]+ ]]; }
 
 ##	Function purpose .: Floating-point-capable "-gt" (which Bash can't natively do). Can also compare string data.
 ##	Input ............: <str: val1>  <str: val2>
@@ -1021,7 +1023,7 @@ fGetBool (){
 	esac
 :;}
 
-##	Function purpose .: Private function common between fGetInt(), fGetNum(), and fRoundNum().
+##	Function purpose .: Private function common between fGetInt(), fGetNum(), fRoundNum(), and fGetFormattedNum().
 ##	                  : Returns a clean decimal number or empty. No leading or trailing 0s, except for no naked decimal point.
 ##	Input ............: <ref: caller variable to modify in-situ>
 ##	Return num .......: [0 by intention, but possibly >0 if external tool(s) error]
@@ -1031,25 +1033,37 @@ fGetBool (){
 ##	Notes ............:
 ##	Dependents .......: fGetInt(), fGetNum(), and fRoundNum()
 ##	Dependencies .....: _BigMath(), _Math()
-##	Unit tests passed : 20250708-195728
-__pGetX_common(){
+##	Unit tests passed : 20250817-151407
+declare __vGetX_common_LastVal=""  ## Can read in functions when you know __pGetX_common() would otherwise be called multiple times on the same value. A very leaky abstraction, but can be crucial for performance in nested loops.
+__pGetX_common (){
+	[[ -v varRef_s78s3 ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, for both input and output values (variable modified in-situ)."
 	local -n varRef_s78s3=$1
 	[[ -z "${varRef_s78s3}" ]] && return 0
-	varRef_s78s3="$(sed -E "${extractNum_Step1_sedE}" <<< "${varRef_s78s3}" | grep -Po "${extractNum_Step2_grepP}" | head -n 1 || true)" ## Results in the first occurrence of space-free number-like characters.
-	[[ -z "${varRef_s78s3}" ]] && return 0
-	local tmpStr; local -i charCount
-	tmpStr="${varRef_s78s3//$sep_decimal_escaped}" ; charCount=$(( ${#varRef_s78s3} - ${#tmpStr} )) ; ((charCount > 1)) && { varRef_s78s3=""; return 0; } ## Too many decimals separators.
-	tmpStr=${varRef_s78s3//[+\-]}                  ; charCount=$(( ${#varRef_s78s3} - ${#tmpStr} )) ; ((charCount > 1)) && { varRef_s78s3=""; return 0; } ## Too many '+|-'.
-	if [[ "${varRef_s78s3}" != *"%"* ]]; then  ## May divide by 100 to convert % to integer.
-		tmpStr="${varRef_s78s3//'%'}"; charCount=$(( ${#varRef_s78s3} - ${#tmpStr} ))
-		((charCount > 1))                  && { varRef_s78s3=""; return 0; } ## Too many decimals separators.
-		[[ "${varRef_s78s3: -1}" != "%" ]] && { varRef_s78s3=""; return 0; } ## The '%' is somewhere not at the end, so invalid number.
-		varRef_s78s3="${varRef_s78s3::-1}" ; [[ -z "${varRef_s78s3}" ]] && return 0  ## Remove the %.
-		if [[ $(grep -Po '[0-9]' <<< "${varRef_s78s3}" | wc -l || 0) -gt 15 ]]; then  fBigMath  varRef_s78s3  "${varRef_s78s3}/100"
-		else                                                                          fMath     varRef_s78s3  "${varRef_s78s3}/100"
-		fi;
+	local workingVal="${varRef_s78s3}"
+	varRef_s78s3="" ; __vGetX_common_LastVal=""
+	workingVal="$(sed -E "${extractNum_Step1_sedE}" <<< "${workingVal}" | grep -Po "${extractNum_Step2_grepP}" | head -n 1 || true)" ## Results in the first occurrence of space-free number-like characters.
+	[[ -z "${workingVal}" ]] && return 0
+	local digitsForCounting_s8hky=""; local -i charCount=0
+	digitsForCounting_s8hky="${workingVal//"${sep_decimal}"/}" #............................................................: Remove decimal symbols for counting digits
+	charCount=$(( ${#workingVal} - ${#digitsForCounting_s8hky} )) ; ((charCount > 1)) && { workingVal=""; return 0; } #...: Too many decimals separators.
+	digitsForCounting_s8hky=${workingVal//[+\-]} #..........................................................................: Remove '+|-' symbols for counting digits
+	charCount=$(( ${#workingVal} - ${#digitsForCounting_s8hky} )) ; ((charCount > 1)) && { workingVal=""; return 0; } #...: Too many '+|-'.
+	digitsForCounting_s8hky="${workingVal%%[+\-]*}" #.......................................................................: Get location of first '+|-'
+	{ [[ ${#digitsForCounting_s8hky} -ne  ${#workingVal} ]] && [[ ${#digitsForCounting_s8hky} -gt 0 ]]; }  && { workingVal=""; return 0; } #...............................................: '+|-' is not first, e.g. some other formatting.
+	if [[ "${workingVal}" == *"%"* ]]; then  ## May divide by 100 to convert % to integer.
+		digitsForCounting_s8hky="${workingVal//'%'}"  ## Remove % symbols for counting digits
+		charCount=$(( ${#workingVal} - ${#digitsForCounting_s8hky} ))
+		((charCount > 1))                  && { workingVal=""; return 0; } ## Too many % symbols.
+		[[ "${workingVal: -1}" != "%" ]] && { workingVal=""; return 0; } ## The '%' is not at the end, thus an invalid number.
+		workingVal="${workingVal::-1}"  ## Remove the % from the end
+		[[ -z "${workingVal}" ]] && return 0  ## If there's nothing left, return.
+		if [[ $(grep -Po '[0-9]+' <<< "${workingVal}" | wc -c || echo 0) -gt 15 ]]; then  fBigMath  workingVal  "${workingVal}/100"
+		else                                                                                fMath     workingVal  "${workingVal}/100"
+		fi
 	fi;
-	[[ -n "${varRef_s78s3}" ]] && varRef_s78s3="$(sed -E "${sedE_NoInsignificantNonNakedZeros}" <<< "${varRef_s78s3}")"
+	[[ -n "${workingVal}" ]] && workingVal="$(sed -E "${sedE_NoInsignificantNonNakedZeros}" <<< "${workingVal}")"
+	#fEchoVarAndVal workingVal ; exit
+	varRef_s78s3="${workingVal}" ; __vGetX_common_LastVal="${workingVal}"
 :;}
 
 ##	Function purpose .: Extracts, validates, and/or defaults a +/- integer. (A surprisingly hard problem in bash.) !locale-aware
@@ -1058,21 +1072,18 @@ __pGetX_common(){
 ##	StdOut ...........: [nothing]
 ##	StdErr ...........: Text on error, if no default value set.
 ##	Other side-effects:
-##	Notes ............: Removing commas and insignificant 0s. Doesn't round. (To get a rounded integers, use 'fGetNum var NUM 0'.) For %, this divides by 100 then truncates.
+##	Notes ............: Removes decimal separators and insignificant 0s. Doesn't round. (To get a rounded integers, use 'fGetNum var NUM 0'.) For %, this divides by 100 then truncates.
 ##	Dependents .......: Possibly fInit()
 ##	Dependencies .....: __pGetX_common(), fThrowError()
 ##	Unit tests passed : 20250708
-fGetInt(){
-	##
-	##
-	## Unit tests passed, code minified on: 20250708.
+fGetInt (){
 	local -n varRef_s74bm=$1           ## Arg <REQUIRED>: Variable for return integer.
 	local -r arg_inputVal="${2:-}"     ## Arg [optional]: Input string to extract/convert to integer.
 	local -r arg_defaultVal="${3:-}"   ## Arg [optional]: This will be used if input is blank, or if input is garbage and $tryNotToError is true.
 	varRef_s74bm=0
-	local -i defaultVal=0    ; local -i isSet_defaultVal=0    ; [[ -n "${arg_defaultVal}"    ]] && { isSet_defaultVal=1    ; defaultVal=$arg_defaultVal ; } ; local -ri defaultVal=$defaultVal ; local -i isSet_defaultVal=$isSet_defaultVal
+	local -i defaultVal=0;  local -i isSet_defaultVal=0;  [[ -n "${arg_defaultVal}" ]] && { isSet_defaultVal=1; defaultVal=$arg_defaultVal; } ; local -ri defaultVal=$defaultVal ; local -i isSet_defaultVal=$isSet_defaultVal
 	local    outValStr="${arg_inputVal}"
-	local -i outValInt=0       #; fEchoVarAndVal arg_defaultVal; fEchoVarAndVal defaultVal; fEchoVarAndVal isSet_defaultVal; fEchoVarAndVal outValStr
+	local -i outValInt=0  #; fEchoVarAndVal arg_defaultVal; fEchoVarAndVal defaultVal; fEchoVarAndVal isSet_defaultVal; fEchoVarAndVal outValStr
 	[[ -n "${outValStr}" ]] && __pGetX_common outValStr   ## Common between fGetInt(), fGetNum(), and fRoundNum(). Returns a clean decimal number, no leading or trailing 0s, and no naked decimal point.
 	[[ -n "${outValStr}" ]] && outValStr="$(grep -Po "^[+\-]?[0-9]+" <<< "${outValStr}" | head -n 1 || echo "")"  ## Extract only the first full [-] and integer (including 0).
 	if [[ -n "${outValStr}" ]]; then
@@ -1082,7 +1093,8 @@ fGetInt(){
 		elif [[ -n "${arg_inputVal}" ]]; then  fThrowError  "The input value can't be converted to an integer: '${arg_inputVal}' [s78qb]."  "${FUNCNAME[0]}"
 		else                                   fThrowError  "No input value given' [¢ɤϠÑ]."  "${FUNCNAME[0]}"
 		fi
-	fi; varRef_s74bm=$outValInt
+	fi
+	varRef_s74bm=$outValInt
 :;}
 
 ##	Function purpose .: Extracts, validates, and/or defaults a +/- rational number. (A surprisingly hard problem in bash.) !locale-aware
@@ -1095,8 +1107,7 @@ fGetInt(){
 ##	Dependents .......: Possibly fInit() but commented out by default.
 ##	Dependencies .....: __pGetX_common(), fThrowError()
 ##	Unit tests passed : 20250708
-fGetNum(){
-	## Converts, and optionally constrains, rounds, defaults, and/or validates an integer or float.
+fGetNum (){
 	local -n varRef_s76ej=$1          ; shift || true  ## Arg <REQUIRED>: Ref: Variable for return number.
 	local -r arg_inputVal="${1:-}"    ; shift || true  ## Arg [optional]: Str: Value to convert to a propernumber. If empty, default or 0 will be returned regardless of $_FGETINT_NOERROR
 	local    arg_roundDigits="${1:-}" ; shift || true  ## Arg [optional]: Int: Number of decimal places to round to.
@@ -1265,9 +1276,10 @@ fAutoMath(){  ## Decide on _Math() or _BigMath() based on crude digit count. Slo
 ##	Notes ............:
 ##	Example[s] .......:
 ##	Dependents .......:
-##	Dependencies .....: fIsNum(), fRoundNum()
+##	Dependencies .....: fIsNum(), fIsInt(), fGetBool(), fRoundNum(), fSplitStr(), fPadTruncStr(), fThrowError()
 ##	Unit tests passed :
-fGetFormattedNum(){  ## !locale-aware
+awk_InsertThousandsSeparatorsIntoInt="{n=\$0;o=\"\";while(length(n)>3){o=\"${sep_thousands}\"substr(n,length(n)-2,3)o;n=substr(n,1,length(n)-3)} print n o}"
+fGetFormattedNum (){  ## !locale-aware
 	local -n varRef_s74h1=$1                 ; shift || true  ## Arg <REQUIRED>: Ref:  Caller variable to put return value in.
 	local -r arg_inputVal="${1:-}"           ; shift || true  ## Arg <REQUIRED>: Str:  Input value to format.
 	local -r arg_roundDigits="${3:-}"        ; shift || true  ## Arg [optional]: Int:  Digits to round to. Basically unlimited. If not specified, goes with $arg_numTrailingZeroPad if set, or 15 if not.
@@ -1277,27 +1289,27 @@ fGetFormattedNum(){  ## !locale-aware
 	local -r arg_numTrailingZeroPad="${1:-}" ; shift || true  ## Arg [optional]: Int:  Nnumber of trailing 0s to pad with, if result is not already that long or longer.
 	varRef_s74h1="0"
 	local retVal=""
+	local v__pGetX_common=""
 
-	## Validate input/set default
-	if ! fIsNum "${arg_inputVal}" && fIsNum "${arg_defaultVal}"; then
-		arg_inputVal="${arg_defaultVal}"
+	## Arg: Validate input/set default
+	if fIsNum "${arg_inputVal}"; then
+		v__pGetX_common="${__vGetX_common_LastVal}"
+	elif fIsNum "${arg_defaultVal}"; then
+		arg_inputVal=${arg_defaultVal}
 	else
-		fThrowError "Input '${arg_inputVal}' is not a number, and no valid default value was specified."
+		fThrowError "Input '${arg_inputVal}' is not a number, and no valid default value was specified. [¢Ẅᛯ3]"
 	fi
 
-	## Validate and default roundDigits.
-	local -i roundDigits=15
-	if [[ -n "${arg_roundDigits}" ]] && fIsInt "${arg_roundDigits}"; then
-		roundDigits=${arg_roundDigits}
-	else
-		fThrowError "Invalid integer specified for # rounding digits: '${arg_roundDigits}'."
-	fi
+	## Arg: Validate and default roundDigits, with default of 15.
+	local -i roundDigits
+	fGetInt  roundDigits  "${arg_roundDigits}"  15
+	((roundDigits < 0)) && roundDigits=0
 
 	## Get valid bool for showThousandsDelim, with default of 1.
 	local -i  showThousandsDelim
 	fGetBool  showThousandsDelim  "${arg_showThousandsDelim}"  1
 
-	## Get valid # zeros padding.
+	## Arg: Get valid # zeros padding, with default of 0.
 	local -i numLeadingZeroPad
 	fGetInt  numLeadingZeroPad   "${arg_numLeadingZeroPad}"   0
 	((numLeadingZeroPad < 0))  && numLeadingZeroPad=0
@@ -1305,20 +1317,28 @@ fGetFormattedNum(){  ## !locale-aware
 	fGetInt  numTrailingZeroPad  "${arg_numTrailingZeroPad}"  0
 	((numTrailingZeroPad < 0)) && numTrailingZeroPad=0
 
-	## Get a minimally sane real number. ##RESUME
-	fGetNum  arg_inputVal  "${arg_inputVal}"  "${arg_roundDigits}"  "${arg_defaultVal}"
+	## Get a minimally sane - and rounded - real number.
+	local inputVal="${v__pGetX_common}"  ## From fIsNum()'s call to leakey __pGetX_common(), to avoid running so many external programs again.
 
 	## Remember and remove sign
+	local -i hasNegativeSign=0
+	[[ ${inputVal} =~ ^[-] ]] && { hasNegativeSign=1; inputVal="${inputVal#[+-]}"; }
 
-	## Split into integer and decimal
+	## Split into integer and decimal, and pad each
+	local leftNum rightNum
+	fSplitStr  leftNum  rightNum  "${inputVal}"  "${sep_decimal}"
+	((numLeadingZeroPad  > 0)) && fPadTruncStr  leftNum   $numLeadingZeroPad   -1  0  "0"
+	((numTrailingZeroPad > 0)) && fPadTruncStr  rightNum  $numTrailingZeroPad   1  0  "0"
 
-	## Left-pad integer with zeroes
+	## Add thousands delimiter into left integer portion
+	{ ((showThousandsDelim)) && [[ ${#leftNum} -gt 3 ]]; } && leftNum="$(awk "${awk_InsertThousandsSeparatorsIntoInt}" <<< "${leftNum}")"
 
-	## Add thousands delimiter into lef integer portion
+	## Reassemble
+	inputVal="${leftNum}"
+	[[ -n "${rightNum}" ]] && inputVal="${inputVal}${sep_decimal}${rightNum}"
+	((hasNegativeSign)) && inputVal="-${inputVal}"
 
-	## Right-pad decimal with zeroes
-
-	## Put number back together
+	varRef_s74h1="${inputVal}"
 
 :;}
 
@@ -1326,10 +1346,10 @@ fGetRandomInt(){
 	##	Purpose: Return a cryptographically valid integer between low and high ints, inclusive.
 	##	Note: $RANDOM can do similar, but is not uniformly random, or crypto-secure.
 	##	Unit tests passed on: 20250704.
-	local -n  varName=$1  ## <REQUIRED>: Variable for return int.
+	local -n  varName_s8hk7=$1  ## <REQUIRED>: Variable for return int.
 	local -ri intLow=$2   ## <REQUIRED>: Lowest int.
 	local -ri intHigh=$3  ## <REQUIRED>: Highest int.
-	varName=$(shuf -i ${intLow}-${intHigh} -n 1 --random-source=/dev/urandom)
+	varName_s8hk7=$(shuf -i ${intLow}-${intHigh} -n 1 --random-source=/dev/urandom)
 :;}
 
 
@@ -1354,12 +1374,44 @@ fGetStrMatchPos(){
 	{ [[ -z "${mainStr}" ]] || [[ -z "${findStr}" ]]; } && return 0
 	local -r testStr="${mainStr%%"$findStr"*}"
 	[[ "${testStr}" != "${mainStr}" ]] && varRef_s74ht=$((${#testStr}+1))
-	:;}
+:;}
+
 fTrimStr(){
 	##	Unit tests passed on: 20250704.
 	local -n varRef_s74n3=$1  ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
 	[[ -n "${varRef_s74n3}" ]] && varRef_s74n3="$(sed 's/^[[:blank:]]*//g; s/[[:blank:]]*$//g;' 2>/dev/null <<< "${varRef_s74n3}" || true)"
-	:;}
+:;}
+
+##	Function Purpose .: Splits a string into two subtstrings, on the first accurrence of a delimiter or substring (without including the delimiter or substring).
+##	Input ............: See arguments section below.
+##	Return num .......: >0 on error, if no default value specified.
+##	StdOut ...........: [nothing]
+##	StdErr ...........: Text on error, if no default value specified.
+##	Other side-effects: [none]
+##	Statefulness .....: Stateless.
+##	Minified? ........: Yes, readably
+##	Notes ............:
+##	Example[s] .......:
+##	Dependents .......: fFormat()
+##	Dependencies .....:
+##	Unit tests passed : 20250817-105338
+fSplitStr (){
+	local -n varName_left_s8hcx=$1    ## Arg <REQUIRED>: Ref: The caller variable to put the left substring in.
+	local -n varName_right_s8hd0=$2   ## Arg <REQUIRED>: Ref: The caller variable to put the right substring in.
+	local -r sourceString="${3:-}"    ## Arg <REQUIRED>: Str: The source string to parse.
+	local -r delimString="${4:-}"     ## Arg <REQUIRED>: Str: The delimiter or substring to split on (without including).
+	varName_left_s8hcx=""
+	varName_right_s8hd0=""
+	## Conditions where we know nothing will be returned.
+	[[ -z "${sourceString}"                     ]] && return 0
+	## Conditions where we know that right will be empty, and left will == input.
+	[[ -z "${delimString}"                      ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter is empty.
+	[[     ${#delimString} -ge ${#sourceString} ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter is longer than source.
+	[[ "${sourceString}" != *"${delimString}"*  ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter not in source [technically a superset of previous test].
+	varName_left_s8hcx="${sourceString%%"${delimString}"*}"
+	varName_right_s8hd0="${sourceString#*"${delimString}"}"
+:;}
+
 fNormStr(){
 	##	Purpose: Strips leading and trailing spaces from string, and changes all whitespace inside a string to single spaces. Reference: https://unix.stackexchange.com/a/205854
 	##	Unit tests passed on: 20250704.
@@ -1367,7 +1419,8 @@ fNormStr(){
 	varName_s74e8="${varName_s74e8//[$'\t\r\n ']/' '}"  ## Convert misc whitespace to space.
 	varName_s74e8="${varName_s74e8//$'\t'/ }"           ## Convert tabs to spaces
 	varName_s74e8="$(awk '{$1=$1};1' 2>/dev/null <<< "${varName_s74e8}" || true)"  ## Collapse multiple spaces to one and trim
-	:;}
+:;}
+
 fAppendStr(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74nj=$1                    ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
@@ -1375,14 +1428,15 @@ fAppendStr(){
 	local -r appendStr="${3:-}"                      ## Arg [optional]: String to append at end.
 	[[ -n "${varName_s74nj}" ]] && varName_s74nj="${varName_s74nj}${appendFirstIfExistingNotEmpty}"
 	varName_s74nj="${varName_s74nj}${appendStr}"
-	:;}
+:;}
+
 fPadTruncStr(){
 	##	Unit tests passed on: 20250704.
 	local -n    varName_s74np=$1             ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
 	local    -i toLen=$2                     ## Arg <REQUIRED>: Integer length to pad to. If 0, won't pad, and may return '' if $doTruncateIfInputTooLong is 1.
 	local    -i padDirection=$3              ## Arg [optional]: Negative value to pad to left, positive [default] pad to right.
 	local    -i doTruncateIfInputTooLong=$4  ## Arg [optional]: 1 to truncate input string if it's longer than $toLen. Default is 0.
-	local       padChar="${5:-}"                 ## Arg [optional]: Will default to space (' '), if empty. Only first character used.
+	local       padChar="${5:-}"             ## Arg [optional]: Will default to space (' '), if empty. Only first character used.
 	((doTruncateIfInputTooLong != 0)) && doTruncateIfInputTooLong=1 #.........................: Normalize $doTruncateIfInputTooLong.
 	[[ ${#varName_s74np} -eq $toLen ]] && return 0 #..........................................: String already same as it would be after transform, so do nothing and return
 	{ ((toLen <= 0)) && ((doTruncateIfInputTooLong)); } && { varName_s74np=""; return 0; } #..: If $toLen <= 0, return and truncate, set empty string and return.
@@ -1398,10 +1452,11 @@ fPadTruncStr(){
 		varName_s74np="${padStr}${varName_s74np}"
 		varName_s74np="${varName_s74np: -$toLen}"  ## Left-pad and/or truncate; either it's long enough to truncate padding, or we only made it this far because we're going to truncate input and $toLen is >0.
 	fi
-	:; }
+:; }
+
 fTernaryStr(){
 	##	Unit tests passed on: 20250704.
-	local -n varName_s74qf=$1    ; shift || true  ## Arg <REQUIRED>: Variable reference for result.
+	local -n varName_s74qf=$1        ; shift || true  ## Arg <REQUIRED>: Variable reference for result.
 	local -r trueCondition="${1:-}"  ; shift || true  ## Arg <REQUIRED>: String that is considered 'true'.
 	local -r testCondition="${1:-}"  ; shift || true  ## Arg <REQUIRED>: String to compare to $trueCondition to test for true.
 	local -r prefixStr="${1:-}"      ; shift || true  ## Arg [optional]: String to prepend to beginning no matter what.
@@ -1412,14 +1467,15 @@ fTernaryStr(){
 	varName_s74qf="${varName_s74qf}${prefixStr}"
 	{ [[ "${testCondition}" == "${trueCondition}" ]] && varName_s74qf="${varName_s74qf}${ifTrueStr}"; } || varName_s74qf="${varName_s74qf}${ifFalseStr}";
 	varName_s74qf="${varName_s74qf}${suffixStr}"
-	:;}
+:;}
+
 ConditionalSandwichStr(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74qp=$1  ; shift || true  ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
 	local -r withPrefix="${1:-}"   ; shift || true  ## Arg [optional]: String to prepend to beginning, only if first arg is non-empty.
 	local -r withSuffix="${1:-}"   ; shift || true  ## Arg [optional]: String to append to end, only if first arg is non-empty.
 	[[ -n "${varName_s74qp}" ]] && varName_s74qp="${withPrefix}${varName_s74qp}${withSuffix}"
-	:;}
+:;}
 
 [[ -z "${outputNonEmptyArg_MaxCount+x}" ]] && declare -ri outputNonEmptyArg_MaxCount=128
 fJoinNonEmptyArgs(){  ## Given a list of arguments, joins all empty ones together
@@ -1509,8 +1565,8 @@ fConvertBase10to32c(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74rp=$1     ## Arg <REQUIRED>: Variable reference for result.
 	local -r input_InBase10="${2:-}"
-	[[ -z "${1:-}" ]] && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩǑǴ]"  "${FUNCNAME[0]}"
-	[[ -v returnVariableName ]]      && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩöÁ]"  "${FUNCNAME[0]}"
+	[[ -z "${1:-}" ]] && fThrowError "The first argument must be a parent-scoped variable, by-reference, to store the function return value in. [фǩǑǴ]"  "${FUNCNAME[0]}"
+	[[ -v returnVariableName ]]      && fThrowError "The first argument must be a parent-scoped variable, by-reference, to store the function return value in. [фǩöÁ]"  "${FUNCNAME[0]}"
 	[[ -z "${input_InBase10}" ]]     && fThrowError "No base-10 integer specified to convert. [фȟñŸ]"  "${FUNCNAME[0]}"
 	[[ -z "$(echo "$input_InBase10" | grep -iPo '^[0-9]+$')" ]] && fThrowError "Expecting a base-10 integer as input, instead got '${input_InBase10}'. [фȟñĆ]"  "${FUNCNAME[0]}"
 	local -r -a baseChars=(0 1 2 3 4 5 6 7 8 9 a b c d e f g h j k m n p q r s t v w x y z)
@@ -1523,13 +1579,14 @@ fConvertBase10to32c(){
 		retVal="${retVal}${baseChars[${idx}]}" #...: Build base32c return string one character at a time.
 	done
 	varName_s74rp="${retVal}"
-	:;}
+:;}
+
 fConvertBase10to256j1(){
 	##	Unit tests passed on: 20250704.
 	local -n varName_s74rt=$1    ## Arg <REQUIRED>: Variable reference for result.
 	local -r input_InBase10="${2:-}"
-	[[ -z "${1:-}" ]] && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩŘЖ]"  "${FUNCNAME[0]}"
-	[[ -v returnVariableName ]]      && fThrowError "No parent variable name specified as first parameter to store return value in. [фǩŇǵ]"  "${FUNCNAME[0]}"
+	[[ -z "${1:-}" ]] && fThrowError "The first argument must be a parent-scoped variable, by-reference, to store the function return value in. [фǩŘЖ]"  "${FUNCNAME[0]}"
+	[[ -v returnVariableName ]]      && fThrowError "The first argument must be a parent-scoped variable, by-reference, to store the function return value in. [фǩŇǵ]"  "${FUNCNAME[0]}"
 	[[ -z "${input_InBase10}" ]]     && fThrowError "No base-10 integer specified to convert. [фǩöū]]"  "${FUNCNAME[0]}"
 	[[ -z "$(echo "$input_InBase10" | grep -iPo '^[0-9]+$')" ]] && fThrowError "Expecting a base-10 integer as input, instead got '${input_InBase10}'. [фǩöȞ]"  "${FUNCNAME[0]}"
 	local -ra baseChars=(0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z ʞ λ μ ᛎ ᛏ ᛘ ᛯ ᛝ ᛦ ᛨ ᚠ ᚧ ᚬ ᚼ 🜣 🜥 🜿 🝅 ▵ ▸ ▿ ◂ ҂ ‡ ± ⁑ ÷ ∞ ≈ ≠ Ω Ʊ Ξ ψ Ϡ δ ϟ Ћ Ж Я Ѣ ф ¢ £ ¥ § ¿ ɤ ʬ ⍤ ⍩ ⌲ ⍋ ⍒ ⍢ Â Ĉ Ê Ĝ Ĥ Î Ĵ Ô Ŝ Û Ŵ Ŷ Ẑ â ĉ ê ĝ ĥ î ĵ ô ŝ û ŵ ŷ ẑ Ã Ẽ Ĩ Ñ Õ Ũ Ỹ ã ẽ ĩ ñ õ ũ ỹ Ä Ë Ï Ö Ü Ẅ Ẍ Ÿ ä ë ï ö ü ẅ ẍ ÿ Á Ć É Ǵ Í Ń Ó Ŕ Ś Ú Ẃ Ý Ź á ć é ǵ í ń ó ŕ ś ú ẃ ý ź Ā Ē Ī Ō Ū Ȳ ā ē ī ō ū ȳ Ǎ Č Ď Ě Ǧ Ȟ Ǩ Ň Ǒ Ř Š Ǔ ǎ č ď ě ǧ ȟ ǩ ň ǒ ř š ǔ ǝ ɹ ʇ ʌ ₸ ᛬ 웃 유 ㅈ ㅊ ㅍ ㅎ ㅱ ㅸ ㅠ ソ ッ ゞ ぅ ぇ ォ)
@@ -1542,7 +1599,7 @@ fConvertBase10to256j1(){
 		retVal="${retVal}${baseChars[${idx}]}" #...: Build base32c return string one character at a time.
 	done
 	varName_s74rt="${retVal}"
-	:;}
+:;}
 
 fMustBeInPath(){
 	##	Unit tests passed on: 20250704.
@@ -1557,11 +1614,12 @@ fMustBeInPath(){
 fIndent_abs_pipe(){
 	## Pipe through this function to indent everything by $1 absolute spaces from the left.
 	sed -e 's/^[ \t]*//' | sed "s/^/$(printf "%${1:-}s")/"
-	}
+}
+
 fIndent_rltv_pipe(){
 	## Pipe through this function to indent everything by $1 additional spaces left.
 	sed "s/^/$(printf "%${1:-}s")/"
-	}
+}
 
 fFormatTime_Linux_EpochAndMS(){
 	##	Purpose:
@@ -1658,7 +1716,7 @@ fSafer_rm(){
 ##	Dependencies .....:
 ##	Unit tests passed :
 fFilesys_AddFilterDef(){  ## Filters are processed in order, so the that inclusive and exclusive filters are added purposely matters very much.
-	local -n  varFilterArr_s75n2=$1  ## Arg <REQUIRED>: Variable reference of regex filter array. Just an array created by caller, held in context by caller, but managed by fFilesys_AddFilterDef().
+	local -n  varFilterArr_s75n2=$1      ## Arg <REQUIRED>: Variable reference of regex filter array. Just an array created by caller, held in context by caller, but managed by fFilesys_AddFilterDef().
 	local -r  regEx="${2:-}"             ## Arg <REQUIRED>: String regular expression, compatible with 'grep -P'
 	local     excOrInc="${3:-}"          ## Arg [optional]: [+|-]. '+' [default] for inclusive filter that keeps only matches, '-' for exclusive filter that removes matches.
 	local     caseSensitive="${4:-}"     ## Arg [optional]: [i|s]. 'i' for insensitive [default], 's' for case-sensitive.
@@ -1669,8 +1727,8 @@ fFilesys_AddFilterDef(){  ## Filters are processed in order, so the that inclusi
 	grep -qiP '^[is]$'   <<< "${caseSensitive}" || fThrowError "The fourth argument (case-sensitivity) must be 'i' or 's'."    "${FUNCNAME[0]}"
 	varFilterArr_s75n2+=("${excOrInc}${caseSensitive,,}${regEx}") ;:;}
 fFilesys_DoScan(){
-	local -n varFsList_s75hb=$1          ## Arg <REQUIRED>: Variable reference to append results to. May already have existing results.
-	local -n varFilterArr_s75hb=$2       ## Arg <REQUIRED>: Variable reference of regex filter array. Just an array created by caller, held in context by caller, but managed by fFilesys_AddFilterDef().
+	local -n varFsList_s75hb=$1              ## Arg <REQUIRED>: Variable reference to append results to. May already have existing results.
+	local -n varFilterArr_s75hb=$2           ## Arg <REQUIRED>: Variable reference of regex filter array. Just an array created by caller, held in context by caller, but managed by fFilesys_AddFilterDef().
 	local -r arg_scanPath="${3:-}"           ## Arg <REQUIRED>: Path to scan at and below.
 	local    scanBits="${4:-}"               ## Arg [optional]: Coded string for one or more object types: [f]ile, [d]ir, [l]ink, [i]nvalid link, [e]xecutable files, named [p]ipe, [s]ocket, [c]haracter dev, [b]lock dev
 	local    scanPath="${arg_scanPath}"
@@ -1771,15 +1829,15 @@ __pFilesys_DoScan_Sub(){
 ##	Dependencies .....:
 ##	Unit tests passed :
 fTimer_Start(){
-	[[ -v varName_s76aj ]] && fThrowError "No parent variable name specified as first parameter to store return value in."
+	[[ -v varName_s76aj ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, to store the function return value in."
 	local -n varName_s76aj=$1        ## Arg <REQUIRED>: Variable reference to start time. Must be a string, as a floating-point is stored.
 	varName_s76aj="$(date +%s.%N)" ;}
 fTimer_Stop(){
-	[[ -v varName_s76ak ]] && fThrowError "No parent variable name specified as first parameter to store return value into in."
+	[[ -v varName_s76ak ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, to store the function return value in."
 	local -n varName_s76ak=$1        ## Arg <REQUIRED>: Variable reference to put calculated stop time into. Must be a string, as a floating-point is stored.
 	varName_s76ak="$(date +%s.%N)" ;}
 fTimer_GetET(){
-	[[ -v varName_s76am   ]] && fThrowError "First argument must be parent variable to store return value in."
+	[[ -v varName_s76am   ]] && fThrowError "The first argument must be a parent-scoped variable, by-reference, to store the function return value in."
 	local -n  varName_s76am=$1        ## Arg <REQUIRED>: Variable reference to elapsed time. Must be a string, as a formatted string is returned.
 	local -r  timerStart="${2:-}"     ## Arg <REQUIRED>: Value from fTimer_Start()
 	local -r  timerStop="${3:-}"      ## Arg <REQUIRED>: Value from fTimer_Stop()

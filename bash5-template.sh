@@ -84,12 +84,12 @@ fInit(){
 
 	## Validate dependencies
 	fDependencies_Add  awk         "A GNU coreutil. Check for broken link to mawk or gawk."
+	fDependencies_Add  gawk        "GNU awk [more features], in nearly all repos if not default distros."
+	fDependencies_Add  mawk        "Mike's awk [fastest], in nearly all repos if not default distros."
 	fDependencies_Add  basename    "A GNU coreutil, in nearly all repos if not default distros."
 	fDependencies_Add  dirname     "A GNU coreutil, in nearly all repos if not default distros."
 	fDependencies_Add  find        "Part of GNU findutils, in nearly all repos if not default distros."
-	fDependencies_Add  gawk        "GNU awk [more features], in nearly all repos if not default distros."
 	fDependencies_Add  grep        "GNU grep, in nearly all repos if not default distros."
-	fDependencies_Add  mawk        "Mike's awk [fastest], in nearly all repos if not default distros."
 	fDependencies_Add  realpath    "A GNU coreutil, in nearly all repos if not default distros."
 	fDependencies_Add  sed         "GNU sed, in nearly all repos if not default distros."
 	fDependencies_Add  tr          "A GNU coreutil, in nearly all repos if not default distros."
@@ -890,7 +890,7 @@ fIsBool (){
 ##	Dependents .......: fGetBool()
 ##	Unit tests passed : 20250708 [old], 20250817-160331
 #fIsInt (){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##"  <<<  "${1:-}" | grep  -qP  "^[+\-]?[0-9]+${sep_decimal_escaped}?\$"; }
-fIsInt (){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-?[1-9]+ ]]; }
+fIsInt (){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-?[1-9]+$ ]]; }
 
 ##	Function purpose .: Test if input is a fairly raw number, integer or decimal. Currency symbols, +/-, %, and thousands separators are ok.
 ##	Input ............: <str: test value>
@@ -1034,13 +1034,14 @@ fGetBool (){
 ##	Dependents .......: fGetInt(), fGetNum(), and fRoundNum()
 ##	Dependencies .....: _BigMath(), _Math()
 ##	Unit tests passed : 20250817-151407
-declare __vGetX_common_LastVal=""  ## Can read in functions when you know __pGetX_common() would otherwise be called multiple times on the same value. A very leaky abstraction, but can be crucial for performance in nested loops.
+declare    __vGetX_common_LastVal=""  ## Can read in functions when you know __pGetX_common() would otherwise be called multiple times on the same value. A very abstraction, but can be crucial for performance e.g. in nested loops.
+declare -i __vGetX_common_WasRun=0    ## Can manually set this to 0, then test later to verify that __pGetX_common() was run. Use in conjunction with $__vGetX_common_LastVal.
 __pGetX_common (){
 	[[ -v varRef_s78s3 ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, for both input and output values (variable modified in-situ)."
 	local -n varRef_s78s3=$1
 	[[ -z "${varRef_s78s3}" ]] && return 0
 	local workingVal="${varRef_s78s3}"
-	varRef_s78s3="" ; __vGetX_common_LastVal=""
+	varRef_s78s3="" ; __vGetX_common_LastVal=""; __vGetX_common_WasRun=0
 	workingVal="$(sed -E "${extractNum_Step1_sedE}" <<< "${workingVal}" | grep -Po "${extractNum_Step2_grepP}" | head -n 1 || true)" ## Results in the first occurrence of space-free number-like characters.
 	[[ -z "${workingVal}" ]] && return 0
 	local digitsForCounting_s8hky=""; local -i charCount=0
@@ -1058,12 +1059,12 @@ __pGetX_common (){
 		workingVal="${workingVal::-1}"  ## Remove the % from the end
 		[[ -z "${workingVal}" ]] && return 0  ## If there's nothing left, return.
 		if [[ $(grep -Po '[0-9]+' <<< "${workingVal}" | wc -c || echo 0) -gt 15 ]]; then  fBigMath  workingVal  "${workingVal}/100"
-		else                                                                                fMath     workingVal  "${workingVal}/100"
+		else                                                                              fMath     workingVal  "${workingVal}/100"
 		fi
 	fi;
 	[[ -n "${workingVal}" ]] && workingVal="$(sed -E "${sedE_NoInsignificantNonNakedZeros}" <<< "${workingVal}")"
 	#fEchoVarAndVal workingVal ; exit
-	varRef_s78s3="${workingVal}" ; __vGetX_common_LastVal="${workingVal}"
+	varRef_s78s3="${workingVal}"; __vGetX_common_LastVal="${workingVal}"; __vGetX_common_WasRun=1
 :;}
 
 ##	Function purpose .: Extracts, validates, and/or defaults a +/- integer. (A surprisingly hard problem in bash.) !locale-aware
@@ -1149,7 +1150,7 @@ fGetNum (){
 ##	Dependencies .....: fIsNum(), fGetStrMatchPos(), fThrowError(), __pGetX_common(), Numeric function constants
 ##	Unit tests passed : 20250708
 declare -i _FROUNDNUM_SKIP_PRECLEAN=0  ## If used, must be set each call.
-fRoundNum(){
+fRoundNum (){
 	local -n  varRef_s76sr=$1   ## Arg <REQUIRED>: ref: caller variable to modify in-situ
 	local -i  roundDigits=$2    ## Arg <REQUIRED>: int: digits to round to
 	fIsNum "${varRef_s76sr}" || fThrowError  "Input isn't a number: '${varRef_s76sr}'. [¢¿VÉ]"  "${FUNCNAME[0]}"
@@ -1289,16 +1290,17 @@ fGetFormattedNum (){  ## !locale-aware
 	local -r arg_numTrailingZeroPad="${1:-}" ; shift || true  ## Arg [optional]: Int:  Nnumber of trailing 0s to pad with, if result is not already that long or longer.
 	varRef_s74h1="0"
 	local retVal=""
-	local v__pGetX_common=""
+	local vGetX_common_LastVal=""
 
-	## Arg: Validate input/set default
-	if fIsNum "${arg_inputVal}"; then
-		v__pGetX_common="${__vGetX_common_LastVal}"
-	elif fIsNum "${arg_defaultVal}"; then
-		arg_inputVal=${arg_defaultVal}
-	else
-		fThrowError "Input '${arg_inputVal}' is not a number, and no valid default value was specified. [¢Ẅᛯ3]"
-	fi
+	## Arg: Validate input/set default; depending on fIsNum() to call __pGetX_common() and set $__vGetX_common_LastVal, but verify $__vGetX_common_WasRun in case fIsNum() is refactored or something.
+	__vGetX_common_WasRun=0
+	_FROUNDNUM_SKIP_PRECLEAN=1
+	if   fIsNum "${arg_inputVal}"   ; then :
+	elif fIsNum "${arg_defaultVal}" ; then :
+	else fThrowError "Input '${arg_inputVal}' is not a number, and no valid default value was specified. [¢Ẅᛯ3]"; fi
+	((! __vGetX_common_WasRun)) && fThrowError "It would seem that __pGetX_common() wasn't run as expected. Has fIsNum() been refactored to not call it? [¢ẅ±X]"
+	local inputVal=$__vGetX_common_LastVal
+	_FROUNDNUM_SKIP_PRECLEAN=0
 
 	## Arg: Validate and default roundDigits, with default of 15.
 	local -i roundDigits
@@ -1316,9 +1318,6 @@ fGetFormattedNum (){  ## !locale-aware
 	local -i numTrailingZeroPad
 	fGetInt  numTrailingZeroPad  "${arg_numTrailingZeroPad}"  0
 	((numTrailingZeroPad < 0)) && numTrailingZeroPad=0
-
-	## Get a minimally sane - and rounded - real number.
-	local inputVal="${v__pGetX_common}"  ## From fIsNum()'s call to leakey __pGetX_common(), to avoid running so many external programs again.
 
 	## Remember and remove sign
 	local -i hasNegativeSign=0

@@ -52,22 +52,21 @@ fCopyright(){ ((doQuietly)) && return;
 	fEcho_Clean "Built on 'bash5-template.sh' ${templateVersion}, Copyright © ${thisCopyrightYear} ${thisAuthor}."
 	fEcho_Clean "Both are licensed GPLv3+: GNU GPL version 3 or later. Full text at"
 	fEcho_Clean "  https://www.gnu.org/licenses/gpl-3.0.en.html"
-#	fEcho_Clean "There is no warranty, to the extent permitted by law."
-	fEcho_Force ;:;}
+	fEcho_Clean "" ;:;}
 fAbout(){ ((doQuietly)) && return;
 	fEcho_Clean ""
 	#           X-------------------------------------------------------------------------------X
-	fEcho_Force "Does some stuff:"
-	fEcho_Force "  • Do some stuff."
-	fEcho_Force "  • Do some more stuff."
-	fEcho_Force ;:;}
+	fEcho_Clean "Does some stuff:"
+	fEcho_Clean "  • Do some stuff."
+	fEcho_Clean "  • Do some more stuff."
+	fEcho_Clean "" ;:;}
 fSyntax(){ ((doQuietly)) && return;
 	fEcho_Clean ""
 	#           X-------------------------------------------------------------------------------X
-	fEcho_Force "Syntax: ${meName}  [optional args]  <file path>"
-	fEcho_Force "  Optional arguments:"
-	fEcho_Force "    --some-option <NUM> : Something."
-	fEcho_Force ;:;}
+	fEcho_Clean "Syntax: ${meName}  [optional args]  <file path>"
+	fEcho_Clean "  Optional arguments:"
+	fEcho_Clean "    --some-option <NUM> : Something."
+	fEcho_Clean "" ;:;}
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -93,7 +92,6 @@ fInit(){
 	fDependencies_Add  realpath    "A GNU coreutil, in nearly all repos if not default distros."
 	fDependencies_Add  sed         "GNU sed, in nearly all repos if not default distros."
 	fDependencies_Add  tr          "A GNU coreutil, in nearly all repos if not default distros."
-	[[ $(fDependencies_GetCount_Required_byEcho) -gt 0 ]] && { fCopyright; fAbout; }
 	fDependencies_Validate
 
 	## Custom arg variables
@@ -103,9 +101,9 @@ fInit(){
 
 	## Parse the args [only change $parseArgs_maxPositionalArgCount]
 	local -ri parseArgs_maxPositionalArgCount=2  ## Variable expected by fParseArgs()
-	local allArgsStr; local -a allArgsArr
+	local -a allArgsArr
 	fParseArgs  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
-	local -r allArgsStr; local -ar allArgsArr
+	readonly allArgsArr
 
 	## Arg validation and normalization
 #	local -i boolArg  ; fGetBool boolArg   "${arg_boolArg}"   0
@@ -130,25 +128,7 @@ fInit(){
 #	local -r zipMountDir="${zipMountDir}"
 
 	## Prompt to continue
-	if ((doPromptToContinue)); then
-		if ((! doQuietly)); then
-			fEcho_Clean
-			fCopyright; fAbout
-			fEcho_Clean
-			fEcho_Clean "Some other information."
-			if [[ "${runAsOtherUser}" != "${USER}" ]]; then
-				fEcho_Clean
-				if fIsRegexMatch "${runAsOtherUser}" '^sudo|root$'; then fEcho_Clean "Needs to run as sudo, may prompt for authorization."
-				else fEcho_Clean "Needs to run as user '${runAsOtherUser}', may prompt for sudo authorization."
-				fi
-			fi
-			fEcho_Clean
-		fi
-		read -r -p "Continue? (y/n): " answer
-		fEcho_ResetBlankCounter
-		[[ "${answer,,}" != "y" ]] && { fEcho "User aborted."; exit 1; }
-		((! doQuietly)) && fEcho_Clean
-	fi
+	fPromptToContinue "\nExtra info\n"
 
 	## Ready to go; call main function with fully-validate variables.
 	fRunFunctionAs  "${runAsOtherUser}"  fMain  "${logFilespec}"  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
@@ -186,7 +166,6 @@ fParseArgs(){
 	local -r -i maxPracticalArgCount=50  ## In Bash we have 2MB of args, or somewhere around 10k by count. For readabality and performance, keep it MUCH lower, say ~20-99.
 	local    -i totalArgCount=0
 	local    -i switchCounter=0
-	allArgsStr=""
 	allArgsArr=()
 	## Store the highest non-empty argument number.
 	local -i i; i=0
@@ -196,10 +175,7 @@ fParseArgs(){
 	local thisStr=""
 	for ((i=1; i<=totalArgCount; i++)); do
 		thisStr="${!i}"
-		## Append argument number i to allArgsStr, first replacing embedded quotes, then delimiting with single quotes and spaces.
 		thisStr="${thisStr//\"/″}"; thisStr="${thisStr//\'/′}"
-		[[ -n "${allArgsStr}" ]] && allArgsStr="${allArgsStr} "
-		allArgsStr="${allArgsStr}'${thisStr}'"
 		## Append argument number i to allArgsArr()
 		allArgsArr+=("${thisStr}")
 	done
@@ -222,15 +198,14 @@ fParseArgs(){
 
 			## Check if this was supposed to NOT be a unary switch (eg expecting a parameter after previous long-option)
 			((expectingSwitchParamForNextArg)) && fThrowError "Expecting a long-option argument for '${lastSwitch}', instead got another option '${currentArg}'."
-			((switchCounter++))
+			switchCounter=$((switchCounter + 1))
 
 			## Validate switches, and act on unary switches
 			lastSwitchAsPassed="${currentArg}"
 			tmpStr="${currentArg,,}"
 
 			## Strip switch dashes off
-			[[ "-"  == "${tmpStr:0:1}" ]] && tmpStr="${tmpStr:1}"
-			[[ "-"  == "${tmpStr:0:1}" ]] && tmpStr="${tmpStr:1}"
+			while [[ "${tmpStr}" == -* ]]; do tmpStr="${tmpStr#-}"; done
 			lastSwitch="${tmpStr}" ## Remember lastSwitch
 
 			case "${tmpStr}" in
@@ -261,7 +236,7 @@ fParseArgs(){
 
 			else
 				## Well it must be a positional arg then.
-				((positionalArgCounter++))
+				positionalArgCounter=$((positionalArgCounter + 1))
 				((positionalArgCounter > parseArgs_maxPositionalArgCount))  && fThrowError "Too many positional arguments: ${positionalArgCounter}, for max of ${parseArgs_maxPositionalArgCount}."
 				#fEcho_Clean "Debug: positional arg #${positionalArgCounter}: '${currentArg}'"
 
@@ -545,6 +520,25 @@ EOF_s7asw
 		_vLog_DidInitVars=1 ;:;}
 ##/ Generic logging
 
+
+fPromptToContinue(){
+	extraInfoString="$1"
+	if ((doPromptToContinue)); then
+		if ((! doQuietly)); then
+			fEcho_Clean
+			fCopyright; fAbout
+			if [[ -n "${extraInfoString}" ]]; then
+				fEcho_Clean "${extraInfoString}"
+			else
+				fEcho_Clean
+			fi
+		fi
+		read -r -p "Continue? (y/n): " answer
+		fEcho_ResetBlankCounter
+		[[ "${answer,,}" != "y" ]] && { fEcho "User aborted."; exit 1; }
+		((! doQuietly)) && fEcho_Clean
+	fi
+}
 
 ##	Function purpose .: Removes old [and optionally empty] log files - or almost any kind of similarly-named group of files in a single directory.
 ##	Input ............: <str: Logfile folder>  <str: filename with at least one wildcard in it>  [int: # of files to keep. Default to 10.]
@@ -866,7 +860,7 @@ fIsUser(){ { [[ -z "${1:-}" ]] && return 3; } || getent passwd "${1:-}" &>/dev/n
 ##	Dependencies .....: [none]
 ##	Dependents .......: [none]
 ##	Unit tests passed :
-fIsBool (){
+fIsBool(){
 	##	Unit tests passed, code minified on: 20250704.
 	local -r  inputVal="${1:-}"
 	local  -i retVal=1  ## 1 for function return means fail
@@ -889,8 +883,8 @@ fIsBool (){
 ##	Dependencies .....: [none]
 ##	Dependents .......: fGetBool()
 ##	Unit tests passed : 20250708 [old], 20250817-160331
-#fIsInt (){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##"  <<<  "${1:-}" | grep  -qP  "^[+\-]?[0-9]+${sep_decimal_escaped}?\$"; }
-fIsInt (){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-?[1-9]+$ ]]; }
+#fIsInt(){ sed "s#[${sep_thousands_escaped}]##g; s#[${currencySymbols_escaped}]##"  <<<  "${1:-}" | grep  -qP  "^[+\-]?[0-9]+${sep_decimal_escaped}?\$"; }
+fIsInt(){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-?[1-9]+$ ]]; }
 
 ##	Function purpose .: Test if input is a fairly raw number, integer or decimal. Currency symbols, +/-, %, and thousands separators are ok.
 ##	Input ............: <str: test value>
@@ -903,8 +897,8 @@ fIsInt (){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-
 ##	Dependencies .....: [none]
 ##	Dependents .......: fRoundNum()
 ##	Unit tests passed : 20250708
-#fIsNum (){ sed "s#${sep_thousands}##g; s#[${currencySymbols_escaped}]##; s#${sep_decimal_escaped}##;"  <<<  "${1:-}" | grep  -qP  "^[+\-]?[0-9]+%?\$" ; }
-fIsNum (){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-?[0-9]+ ]]; }
+#fIsNum(){ sed "s#${sep_thousands}##g; s#[${currencySymbols_escaped}]##; s#${sep_decimal_escaped}##;"  <<<  "${1:-}" | grep  -qP  "^[+\-]?[0-9]+%?\$" ; }
+fIsNum(){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-?[0-9]+ ]]; }
 
 ##	Function purpose .: Floating-point-capable "-gt" (which Bash can't natively do). Can also compare string data.
 ##	Input ............: <str: val1>  <str: val2>
@@ -917,7 +911,7 @@ fIsNum (){ local testVal="${1:-}"; __pGetX_common testVal; [[ "${testVal}" =~ ^-
 ##	Dependencies .....: [none]
 ##	Dependents .......: fTimer_GetET()
 ##	Unit tests passed : 20250706
-fIsVal1_gt_Val2 (){ awk -v Val1="${1:-}" -v Val2="${2:-}" 'BEGIN {exit !(Val1 > Val2)}'; }
+fIsVal1_gt_Val2(){ awk -v Val1="${1:-}" -v Val2="${2:-}" 'BEGIN {exit !(Val1 > Val2)}'; }
 
 ##	Function purpose .: Floating-point-capable "-lt" (which Bash can't natively do). Can also compare string data.
 ##	Input ............: <str: val1>  <str: val2>
@@ -930,7 +924,7 @@ fIsVal1_gt_Val2 (){ awk -v Val1="${1:-}" -v Val2="${2:-}" 'BEGIN {exit !(Val1 > 
 ##	Dependencies .....: [none]
 ##	Dependents .......: [none]
 ##	Unit tests passed : 20250706
-fIsVal1_lt_Val2 (){ awk -v Val1="${1:-}" -v Val2="${2:-}" 'BEGIN {exit !(Val1 < Val2)}'; }  ## Floating-point-capable -lt (which Bash can't natively do). Unit tests passed on: 20250706.
+fIsVal1_lt_Val2(){ awk -v Val1="${1:-}" -v Val2="${2:-}" 'BEGIN {exit !(Val1 < Val2)}'; }  ## Floating-point-capable -lt (which Bash can't natively do). Unit tests passed on: 20250706.
 
 ##	Function purpose .: PCRE-compatibble regex test.
 ##	Input ............: <str: string to check>  <str: regex>  [bool: 0=case-INsensitive:default, 1=case-sensitive]
@@ -943,7 +937,7 @@ fIsVal1_lt_Val2 (){ awk -v Val1="${1:-}" -v Val2="${2:-}" 'BEGIN {exit !(Val1 < 
 ##	Dependencies .....: [none]
 ##	Dependents .......: fInit(), fRunFunctionAs()
 ##	Unit tests passed : 20250706
-fIsRegexMatch (){
+fIsRegexMatch(){
 	if [[ "${3:-}" == "1" ]]; then grep -qP  "${2:-}" <<< "${1:-}"
 	else                           grep -qPi "${2:-}" <<< "${1:-}"; fi; }
 
@@ -958,7 +952,7 @@ fIsRegexMatch (){
 ##	Dependencies .....: [none]
 ##	Dependents .......: [none]
 ##	Unit tests passed : 20250706
-fGetMinVal (){
+fGetMinVal(){
 	local -n  varName_s76fk=$1  ## <REQUIRED>: Variable for return. Also pass ints or floats (strings) for $2 and $3.
 	{ awk -v Num1="${2:-}" -v Num2="${3:-}" 'BEGIN {exit !(Num1 < Num2)}' && varName_s76fk="${2:-}"; } || varName_s76fk="${3:-}" ;:;}
 
@@ -973,7 +967,7 @@ fGetMinVal (){
 ##	Dependencies .....: [none]
 ##	Dependents .......: [none]
 ##	Unit tests passed : 20250706
-fGetMaxVal (){
+fGetMaxVal(){
 	local -n  varName_s76s9=$1  ## <REQUIRED>: Variable for return. Also pass ints or floats (strings) for $2 and $3.
 	{ awk -v Num1="${2:-}" -v Num2="${3:-}" 'BEGIN {exit !(Num1 > Num2)}' && varName_s76s9="${2:-}"; } || varName_s76s9="${3:-}" ;:;}
 
@@ -988,7 +982,7 @@ fGetMaxVal (){
 ##	Dependencies .....: [none]
 ##	Dependents .......: [none]
 ##	Unit tests passed : 20250706
-fGetBetweenVal (){
+fGetBetweenVal(){
 	local -n  varName_s77dr=$1 ; local -r  testNum="${2:-}"  minNum="${3:-}"  maxNum="${4:-}"
 	     awk -v Val1="$minNum"  -v Val2="$maxNum" 'BEGIN {exit !(Val1 > Val2)}' && fThrowError  "Arg3 (min) must be lower than Arg4 (max). [¢¿5⍩]"  "${FUNCNAME[0]}"
 	if   awk -v Val1="$testNum" -v Val2="$minNum" 'BEGIN {exit !(Val1 < Val2)}' ; then varName_s77dr="$minNum"
@@ -1006,7 +1000,7 @@ fGetBetweenVal (){
 ##	Dependencies .....: fIsInt(), fThrowError()
 ##	Dependents .......: fDependencies_Add()
 ##	Unit tests passed : 20250708
-fGetBool (){
+fGetBool(){
 	##	Unit tests passed, code minified on: 20250704.
 	local -n varRef_s74hb=$1
 	local -r arg_inputVal="${2:-}"
@@ -1036,7 +1030,7 @@ fGetBool (){
 ##	Unit tests passed : 20250817-151407
 declare    __vGetX_common_LastVal=""  ## Can read in functions when you know __pGetX_common() would otherwise be called multiple times on the same value. A very abstraction, but can be crucial for performance e.g. in nested loops.
 declare -i __vGetX_common_WasRun=0    ## Can manually set this to 0, then test later to verify that __pGetX_common() was run. Use in conjunction with $__vGetX_common_LastVal.
-__pGetX_common (){
+__pGetX_common(){
 	[[ -v varRef_s78s3 ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, for both input and output values (variable modified in-situ)."
 	local -n varRef_s78s3=$1
 	[[ -z "${varRef_s78s3}" ]] && return 0
@@ -1077,7 +1071,7 @@ __pGetX_common (){
 ##	Dependents .......: Possibly fInit()
 ##	Dependencies .....: __pGetX_common(), fThrowError()
 ##	Unit tests passed : 20250708
-fGetInt (){
+fGetInt(){
 	local -n varRef_s74bm=$1           ## Arg <REQUIRED>: Variable for return integer.
 	local -r arg_inputVal="${2:-}"     ## Arg [optional]: Input string to extract/convert to integer.
 	local -r arg_defaultVal="${3:-}"   ## Arg [optional]: This will be used if input is blank, or if input is garbage and $tryNotToError is true.
@@ -1108,7 +1102,7 @@ fGetInt (){
 ##	Dependents .......: Possibly fInit() but commented out by default.
 ##	Dependencies .....: __pGetX_common(), fThrowError()
 ##	Unit tests passed : 20250708
-fGetNum (){
+fGetNum(){
 	local -n varRef_s76ej=$1          ; shift || true  ## Arg <REQUIRED>: Ref: Variable for return number.
 	local -r arg_inputVal="${1:-}"    ; shift || true  ## Arg [optional]: Str: Value to convert to a propernumber. If empty, default or 0 will be returned regardless of $_FGETINT_NOERROR
 	local    arg_roundDigits="${1:-}" ; shift || true  ## Arg [optional]: Int: Number of decimal places to round to.
@@ -1150,7 +1144,7 @@ fGetNum (){
 ##	Dependencies .....: fIsNum(), fGetStrMatchPos(), fThrowError(), __pGetX_common(), Numeric function constants
 ##	Unit tests passed : 20250708
 declare -i _FROUNDNUM_SKIP_PRECLEAN=0  ## If used, must be set each call.
-fRoundNum (){
+fRoundNum(){
 	local -n  varRef_s76sr=$1   ## Arg <REQUIRED>: ref: caller variable to modify in-situ
 	local -i  roundDigits=$2    ## Arg <REQUIRED>: int: digits to round to
 	fIsNum "${varRef_s76sr}" || fThrowError  "Input isn't a number: '${varRef_s76sr}'. [¢¿VÉ]"  "${FUNCNAME[0]}"
@@ -1280,7 +1274,7 @@ fAutoMath(){  ## Decide on _Math() or _BigMath() based on crude digit count. Slo
 ##	Dependencies .....: fIsNum(), fIsInt(), fGetBool(), fRoundNum(), fSplitStr(), fPadTruncStr(), fThrowError()
 ##	Unit tests passed :
 awk_InsertThousandsSeparatorsIntoInt="{n=\$0;o=\"\";while(length(n)>3){o=\"${sep_thousands}\"substr(n,length(n)-2,3)o;n=substr(n,1,length(n)-3)} print n o}"
-fGetFormattedNum (){  ## !locale-aware
+fGetFormattedNum(){  ## !locale-aware
 	local -n varRef_s74h1=$1                 ; shift || true  ## Arg <REQUIRED>: Ref:  Caller variable to put return value in.
 	local -r arg_inputVal="${1:-}"           ; shift || true  ## Arg <REQUIRED>: Str:  Input value to format.
 	local -r arg_roundDigits="${3:-}"        ; shift || true  ## Arg [optional]: Int:  Digits to round to. Basically unlimited. If not specified, goes with $arg_numTrailingZeroPad if set, or 15 if not.
@@ -1395,20 +1389,32 @@ fTrimStr(){
 ##	Dependencies .....:
 ##	Unit tests passed : 20250817-105338
 fSplitStr (){
-	local -n varName_left_s8hcx=$1    ## Arg <REQUIRED>: Ref: The caller variable to put the left substring in.
-	local -n varName_right_s8hd0=$2   ## Arg <REQUIRED>: Ref: The caller variable to put the right substring in.
-	local -r sourceString="${3:-}"    ## Arg <REQUIRED>: Str: The source string to parse.
-	local -r delimString="${4:-}"     ## Arg <REQUIRED>: Str: The delimiter or substring to split on (without including).
+	local -n  varName_left_s8hcx=$1    ## Arg <REQUIRED>: Ref: The caller variable to put the left substring in.
+	local -n  varName_right_s8hd0=$2   ## Arg <REQUIRED>: Ref: The caller variable to put the right substring in.
+	local -r  sourceString="${3:-}"    ## Arg [optional]: Str: The source string to parse.
+	local -r  delimString="${4:-}"     ## Arg [optional]: Str: The delimiter or substring to split on (without including).
+	local -ri fromRight=${5:-0}        ## Arg [optional]: Int: 0 if scan from left (default), 1 if from right (e.g. for first '.' filename extension).
 	varName_left_s8hcx=""
 	varName_right_s8hd0=""
 	## Conditions where we know nothing will be returned.
 	[[ -z "${sourceString}"                     ]] && return 0
-	## Conditions where we know that right will be empty, and left will == input.
-	[[ -z "${delimString}"                      ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter is empty.
-	[[     ${#delimString} -ge ${#sourceString} ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter is longer than source.
-	[[ "${sourceString}" != *"${delimString}"*  ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter not in source [technically a superset of previous test].
-	varName_left_s8hcx="${sourceString%%"${delimString}"*}"
-	varName_right_s8hd0="${sourceString#*"${delimString}"}"
+	if ((fromRight)); then
+		## Conditions where we know that left will be empty, and right will == input.
+		[[ -z "${delimString}"                      ]] && { varName_right_s8hd0="${sourceString}"; return 0; }  ## Delimiter is empty.
+		[[     ${#delimString} -ge ${#sourceString} ]] && { varName_right_s8hd0="${sourceString}"; return 0; }  ## Delimiter is longer than source.
+		[[ "${sourceString}" != *"${delimString}"*  ]] && { varName_right_s8hd0="${sourceString}"; return 0; }  ## Delimiter not in source [technically a superset of previous test].
+		## Split on LAST match
+		varName_left_s8hcx="${sourceString%"${delimString}"*}"
+		varName_right_s8hd0="${sourceString##*"${delimString}"}"
+	else
+		## Conditions where we know that right will be empty, and one left == input.
+		[[ -z "${delimString}"                      ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter is empty.
+		[[     ${#delimString} -ge ${#sourceString} ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter is longer than source.
+		[[ "${sourceString}" != *"${delimString}"*  ]] && { varName_left_s8hcx="${sourceString}"; return 0; }  ## Delimiter not in source [technically a superset of previous test].
+		## Split on FIRST match
+		varName_left_s8hcx="${sourceString%%"${delimString}"*}"
+		varName_right_s8hd0="${sourceString#*"${delimString}"}"
+	fi
 :;}
 
 fNormStr(){
@@ -1422,7 +1428,7 @@ fNormStr(){
 
 fAppendStr(){
 	##	Unit tests passed on: 20250704.
-	local -n varName_s74nj=$1                    ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
+	local -n varName_s74nj=$1                        ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
 	local -r appendFirstIfExistingNotEmpty="${2:-}"  ## Arg [optional]: String to append between contents in $varName_s74nj if not empty, and $appendStr.
 	local -r appendStr="${3:-}"                      ## Arg [optional]: String to append at end.
 	[[ -n "${varName_s74nj}" ]] && varName_s74nj="${varName_s74nj}${appendFirstIfExistingNotEmpty}"
@@ -1477,7 +1483,7 @@ ConditionalSandwichStr(){
 :;}
 
 [[ -z "${outputNonEmptyArg_MaxCount+x}" ]] && declare -ri outputNonEmptyArg_MaxCount=128
-fJoinNonEmptyArgs(){  ## Given a list of arguments, joins all empty ones together
+fJoinNonEmptyArgs(){  ## Given a list of arguments, joins all non-empty ones together
 	##	Unit tests passed on: 20250704.
 	local -n  varName_s74qv=$1  ; shift || true  ## Arg <REQUIRED>: Variable reference that contains the string that will be modified in-place.
 	for ((i = 0; i < outputNonEmptyArg_MaxCount; i++)); do
@@ -1536,6 +1542,24 @@ fGetOgUserHome(){
 	[[ -z "${retVal}" ]] && retVal="/home/${userName}"
 	varName_s74rm="${retVal}"
 :;}
+
+fEvalAndErrorOnEmptyResult(){
+	##	Unit tests passed on: 20251117.
+	##	Evaluates a command, and presents an error if the result is empty or all whitespace.
+	[[ -v varRef_sbheq ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, to receive the this function's return value."
+	local -n varRef_sbheq=$1 ; varRef_sbheq=""
+	local -r evalCmd="${2:-}"
+	[[ -z "${evalCmd}" ]] && fThrowError "An expression to evaluate must be the second argument."
+
+	local retVal="$(eval "${evalCmd}")"
+
+	local testVal="${retVal}"
+	testVal="${testVal#"${testVal%%[![:space:]]*}"}"  ## Remove leading whitespace.
+	testVal="${testVal%"${testVal##*[![:space:]]}"}"  ## Remove trailing whitespace.
+
+	[[ -z "${testVal}" ]] && fThrowError "Empty result from evaluation of command: ${evalCmd}"  #"${FUNCNAME[0]}"
+	varRef_sbheq="${retVal}"
+}
 
 fGetFileSize(){
 	local -n varName_s73bq=$1                   ## Arg <REQUIRED>: Variable reference for result.
@@ -1828,11 +1852,11 @@ __pFilesys_DoScan_Sub(){
 ##	Dependencies .....:
 ##	Unit tests passed :
 fTimer_Start(){
-	[[ -v varName_s76aj ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, to store the function return value in."
+	[[ -v varName_s76aj ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, to receive the this function's return value."
 	local -n varName_s76aj=$1        ## Arg <REQUIRED>: Variable reference to start time. Must be a string, as a floating-point is stored.
 	varName_s76aj="$(date +%s.%N)" ;}
 fTimer_Stop(){
-	[[ -v varName_s76ak ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, to store the function return value in."
+	[[ -v varName_s76ak ]] && fThrowError "The first [and only] argument must be a parent-scoped variable, by-reference, to receive the this function's return value."
 	local -n varName_s76ak=$1        ## Arg <REQUIRED>: Variable reference to put calculated stop time into. Must be a string, as a floating-point is stored.
 	varName_s76ak="$(date +%s.%N)" ;}
 fTimer_GetET(){
@@ -2085,12 +2109,13 @@ fi
 ## Execution entry point (do not modify)
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 
-## Error and exit settings
- set -u  ## Require variable declaration. Stronger than mere linting. But can struggle if functions are in sourced files.
- set -e  #..........................................: Exit on errors. This is inconsistent (made a little better with settings below), so eventually may move to 'set +e' (which is more constant work and mental overhead).
- set -E  #..........................................: Propagate ERR trap settings into functions, command substitutions, and subshells.
- shopt -s inherit_errexit  #........................: Propagate 'set -e' ........ into functions, command substitutions, and subshells. Will fail on Bash <4.4.
- set -o pipefail  #.................................: Make sure all stages of piped commands also fail the same.
+## Bash environment settings (comment out what you don't want)
+ set -u  #..................: Require variable declaration. Stronger than mere linting. But can struggle if functions are in sourced files.
+ set -e  #..................: Exit on errors. This is inconsistent (made a little better with settings below), so eventually may move to 'set +e' (which is more constant work and mental overhead).
+ set -E  #..................: Propagate ERR trap settings into functions, command substitutions, and subshells.
+ set -o pipefail  #.........: Make sure all stages of piped commands also fail the same.
+ shopt -s inherit_errexit  #: Propagate 'set -e' ........ into functions, command substitutions, and subshells. Will fail on Bash <4.4.
+ shopt -s dotglob  #........: Include usually-hidden 'dotfiles' in '*' glob operations - usually desired.
 
 ## Check if sourced
 declare -i isSourced; { (return 0 2>/dev/null) && isSourced=1; } || isSourced=0

@@ -1,21 +1,31 @@
-# System shell script language comparison<!-- omit from toc -->
+<!-- markdownlint-disable MD007 -- Unordered list indentation -->
+<!-- markdownlint-disable MD010 -- No hard tabs -->
+<!-- markdownlint-disable MD033 -- No inline html -->
+<!-- markdownlint-disable MD041 -- First line in a file should be a top-level heading -->
+<!-- markdownlint-disable MD055 -- Table pipe style [Expected: leading_and_trailing; Actual: leading_only; Missing trailing pipe] -->
+# System shell script language comparison
 
-## Table of contents<!-- omit from toc -->
+## Table of contents
 
+<!-- TOC -->
+
+- [Table of contents](#table-of-contents)
 - [Introduction](#introduction)
 - [Requirements to replace Bash for certain projects](#requirements-to-replace-bash-for-certain-projects)
 - [Not Requirements](#not-requirements)
 - [The contenders](#the-contenders)
-	- [Ksh\*, Zsh, Yash, Fish, etc.](#ksh-zsh-yash-fish-etc)
+	- [Ksh*, Zsh, Yash, Fish, etc.](#ksh-zsh-yash-fish-etc)
 	- [Nushell, YSH](#nushell-ysh)
 	- [Powershell Core](#powershell-core)
-	- [Node.jnodeJS (via Deno or zx)](#nodejnodejs-via-deno-or-zx)
-	- [Python (via Plumbum or Xonsh)](#python-via-plumbum-or-xonsh)
-	- [.NET C# (formerly ".NET Core")](#net-c-formerly-net-core)
-	- [Java (via Groovy, Kotlin)](#java-via-groovy-kotlin)
+	- [Node.jnodeJS via Deno or zx](#nodejnodejs-via-deno-or-zx)
+	- [Python via Plumbum or Xonsh](#python-via-plumbum-or-xonsh)
+	- [NET C# formerly ".NET Core"](#net-c-formerly-net-core)
+	- [Java via Groovy, Kotlin](#java-via-groovy-kotlin)
 	- [Rust, C++](#rust-c)
 	- [Go](#go)
+- [The winner](#the-winner)
 
+<!-- /TOC -->
 
 ## Introduction
 
@@ -29,22 +39,27 @@ The following list isn't meant to be comprehensive.
 
 ## Requirements to replace Bash for certain projects
 
+Replacing a shell-scripting language is no easy task. There's a reason why Bash (and more broadly `sh`) is so universal in the *nix world. (Even on macOS, and on Windows via WSL.) On native Windows, PowerShell has done a good job of replacing the horrible, clunky old `cmd` (a hand-me-down from the Intel 8088 DOS interpreter), and is even better on Linux - as it waits for native commands to finish without a lot of extra work. But is very verbose and hard to remember.
+
+So can we do better than Bash or PowerShell? The requirements:
+
 - Modern language features such as strong typing, advanced math and array features, dictionaries/hashmaps, methods and properties, collections of "object"-like structures, syntactic sugaring, etc.
 - Cross-platform (Linux, Windows, macOS)
-- Either no runtime required, or trivially easy to acquire on most operating systems and package managers.
+- Long-term stability. Shell scripts are often used for five, ten, twenty years. None should ever break in subtle ways on some runtime updates.
+- Either no runtime required, runtime bundled into one distributable file, or is trivially easy to acquire on most operating systems and package managers.
 	- If a runtime is required: total confidence in version stability and resistance to foreseeable bitrot.
 		- E.g. The runtime environment must inherently support any number of simultaneous runtime versions being installed in parallel (without containers or janky "virtual environments"). And/or future runtime versions must militantly maintain backwards script/program compatibility.
 - Significantly faster than Bash. Either advanced parsing/lexing+JIT, or static compilation.
 - Interactive debugging.
-- IDE features like "jump to definition". (Which some IDEs even support for Bash, but tends to fragile.)
+- IDE features like "jump to definition". (Which some IDEs even support for Bash, but tends to be fragile.)
 	- Not really a language feature, but some languages like Bash make it harder to implement.
 - Good ecosystem, e.g. CI tooling.
 
 ## Not Requirements
 
-- POSIX-compliance. (Should be considered a burden and a distinct *anti*-requirement, than a "positive" attribute for a "modern" language.)
+- POSIX-compliance. (In fact POSIX-compliance should be considered a burden and a distinct *anti*-requirement, and not a "positive" attribute for any modern language.)
 - Expansive third-party module library. (In fact the tyranny of choice and fragmentation can be a burden. E.g. the overwhelming choices in front-end web development.)
-- Popularity.
+- Popularity. Nice to have, but too limiting.
 
 ## The contenders
 
@@ -57,7 +72,7 @@ The following list isn't meant to be comprehensive.
 	- All are basically "Bash+", even if that wasn't their goal. Not worth changing for such small incremental gains.
 	- Some, like Yash and Fish, are actually slower than Bash for things like loops and arrays.
 
-Verdict: Incremental feature improvements over Bash aren't enough.
+Verdict: Incremental feature improvements over Bash aren't enough to retool everything.
 
 ### Nushell, YSH
 
@@ -95,7 +110,7 @@ Verdict: ❌. Possibly perfection as system shell scripting languages (esp YSH).
 - Cons
 	- Some tests show it to be much *slower* than Bash at many simple loops and tasks. (And will definitely be slower than e.g. `awk`, `sed`, `grep` on large amounts of data at once - although Powershell on Linux can also invoke those tools directly on Linux, which makes this point more or less moot.)
 	- Syntax is insanely verbose and difficult to remember, and often with long "dot" pipelines for simple tasks.
-	- Version/dependency problems over time. Scripts are have - and will continue to - become obsolete, with occasional runtime breaking changes.
+	- Version/dependency problems over time. Scripts have - and will continue to - become obsolete, with occasional runtime breaking changes.
 
 Verdict: 🤔 Might use (and occasionally do) for smaller projects where OO, type-safety, and strong live-debugging - in a pure native first-party script - is important.
 
@@ -119,26 +134,28 @@ Verdict: ❌. Sloppy type-safety and error-handling. As long as we're considerin
 
 - Pros:
 	- A fun and elegant language, although some aspects (like object constructors) feel like a janky afterthought.
-	- Great at transforming large amounts of data.
+	- Well-known to be great at working with and transforming large amounts of data, thanks to math libraries like 'pandas' and 'numpy'.
 	- Difficult for shell scripting, but [Plumbum](https://plumbum.readthedocs.io/en/latest/) helps with that, and [Xonsh](https://xon.sh/contents.html) solves as a python-based shell language.
 	- Much faster than Bash.
 	- Xonsh is also a pretty neat shell. (Hence the name.)
 - Cons:
+	- Slow.
+	- Difficult to achieve CPU parallelism.
 	- An unmatched, unmitigated disaster of runtime, dependency, compatibility, and portability *hell*.
 		- Containers, virtual environments, and a mess of incompatible dependency management tools are not acceptable solutions for system shell scripts that need to be highly portable not only across machines and organizations, but sometimes even operating systems.
-		- Also: distro-specific library locations, native extensions break across platforms, compiled C bindings are brittle and break, OS-specific native standard libraries, no native app packager and brittle third-party tools, horrific runtime version management, subtle minor version incompatibilities, no built-in package resolver (`pip` will happily install conflicting requirements), namespace collisions,
-		- Breaking backwards compatibility. Sometimes subtle, sometimes total. (v3 is literally a different language that 2.)
+		- Also: distro-specific library locations, native extensions break across platforms, compiled C bindings are brittle and break, OS-specific native standard libraries, no native app packager and brittle third-party tools, poor runtime version management, and subtle minor version incompatibilities. no built-in package resolver (`pip` will happily install conflicting requirements), namespace collisions,
+	- Breaking backwards compatibility. Sometimes subtle, sometimes total. (v3 is literally a different language than 2, but even smaller releases often introduce breaking changes.)
 		- Can be mitigated only somewhat by:
 			- Not using any third-party dependencies at all - not even `numpy`, `scipy`, `cryptography`.
 			- Not using uncommon language features.
 			- *Re-running all unit tests after minor release versions*.
 
-Verdict: 🤮. Not just no but **hell no**. Run. Run away as fast as you can.
+Verdict: 🤮. An admittedly nice language but an absolute disaster in practice. Not in a million years.
 
 ### .NET C# (formerly ".NET Core")
 
 - Pros:
-	- C# is arguably the most advanced language listed here in terms of features and syntax. (Depending on your perspective and tastes. Go probably has the edge on parallelism.)
+	- C# is (very arguably) the most advanced language listed here in terms of features and syntax. (Depending on your perspective and tastes. Go or Rust probably has the edge in parallelism and "modernity".)
 	- Its JIT is very fast.
 - Neutral:
 	- Reasonably easy to install the runtime, but must use Microsoft's external repos both on Windows and Linux.
@@ -152,7 +169,7 @@ Verdict: 😥. Large executables (at least no runtime installation needed), and 
 
 ### Java (via Groovy, Kotlin)
 
-I have no experience with either and this is surface-level knowledge.
+Your mom or dad's programming language. (Their parents' language was COBOL and FORTRAN.) I have no significant working experience with either, so this is mostly surface-level knowledge:
 
 - Pros:
 	- Java is a solid language. Type safety, OO, advanced features, it's all there. Old != bad.
@@ -160,7 +177,7 @@ I have no experience with either and this is surface-level knowledge.
 - Cons:
 	- Even with Groovy, shell syntax isn't linear or shell-like.
 
-Verdict: ❌. Mostly I just don't want to deal with the heavy Java syntax for system shell scripting. (Though TBF it's not much "worse" than C#.) I also admit to being biased against the Java JVM due to its ownership by Oracle, even though good open-source alternatives exist.
+Verdict: ❌. Mostly I just don't want to deal with the heavy Java syntax for system shell scripting. (Though TBF it's not much "worse" than C#, which was "inspired" by Java, and is a nice language.) I also admit to being biased against the Java JVM due to its ownership by Oracle, even though good open-source alternatives exist.
 
 ### Rust, C++
 
@@ -169,8 +186,9 @@ There is or used to be a pretty cool C++ shell scripting system. But the cons:
 - I think it was/is Windows-only.
 - IIRC it is/was closed-source and commercial, possibly requiring sign-up to use, even if it had a more limited free version.
 - It's C++. For shell scripting??
+- Rust: Too many ways to do things, too steep of a learning curve for shell scripting type tasks, too verbose for scripting. But `rust-script` at least makes scripting possible.
 
-Verdict: ❌. Who hurt you?
+Verdict: 🫪. Who hurt you?
 
 ### Go
 
@@ -191,3 +209,11 @@ Like most real general-purpose languages (as you can see above), Go by itself is
 - [go-cmd](https://github.com/go-cmd/cmd) for running system commands with low code and mental overhead.
 - [script](https://github.com/bitfield/script) for functions that provide cross-platform capabilities of must-have tools like `awk`, `sed`, `grep`, etc. (and with nice pipelining).
 - [afero](https://github.com/spf13/afero) for simplified filesystem handling.
+
+Verdict: 🤷 The tiny, dependency-free executables, that can be compiled on any platform for any other platform, is an attractive feature. It's a fantastic language. Being scriptable, though in not a very portable way, is nice. The modules that make "script-like" duties easy, are also nice - but to be fair those can also be found for pretty much any "real" language. In the end, this is probably the best "real" compiled language on this list for the task, but still not well-suited for shell scripting.
+
+## The winner
+
+Unfortunately there is no clear winner. Everything has tradeoffs. YSH is nice, but a little janky under the hood and not universal. NuShell is nice and more broadly/easily obtainable, but slow. Go is the cross-platform/no-depedency winner, but only when compiled. PowerShell has type-safety, JIT, and OO - but has some subtle breaking version issues over time, and is not trivially easy to obtain. JavaScript is not well-suited for shell scripting.
+
+Non-starters: Python, C++, Rust, CMD, Java. With the worst being Python for long-term script stability.

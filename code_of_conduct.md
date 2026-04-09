@@ -1,3 +1,8 @@
+<!-- markdownlint-disable MD007 -- Unordered list indentation -->
+<!-- markdownlint-disable MD010 -- No hard tabs -->
+<!-- markdownlint-disable MD033 -- No inline html -->
+<!-- markdownlint-disable MD041 -- First line in a file should be a top-level heading -->
+<!-- markdownlint-disable MD055 -- Table pipe style [Expected: leading_and_trailing; Actual: leading_only; Missing trailing pipe] -->
 # Code of Conduct
 
 *This file was generated via [https://contributing.md/generator/](https://contributing.md/generator/)*

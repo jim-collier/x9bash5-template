@@ -1,11 +1,23 @@
+<!-- markdownlint-disable MD007 -- Unordered list indentation -->
+<!-- markdownlint-disable MD010 -- No hard tabs -->
+<!-- markdownlint-disable MD024 -- No duplicate headings [OK with no TOC] -->
+<!-- markdownlint-disable MD033 -- No inline html -->
+<!-- markdownlint-disable MD041 -- First line in a file should be a top-level heading -->
+<!-- markdownlint-disable MD055 -- Table pipe style [Expected: leading_and_trailing; Actual: leading_only; Missing trailing pipe] -->
 # Changelog
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - *With the exception of much older entries, which A) didn't use this convention, and B) have been edited down for brevity since much of the code discussed has been long-gone since before putting the project on github. This more standardized changelog format wasn't followed until 2025-07-10. Anything older than that is a tossup.*
 
+## v10.0.0-beta.2 [2026-04-09]
 
-## v10.0.0-beta.1
+### Changed
+
+- Fixed errors highlighted by linter in some docs.
+- Added some to-dos.
+
+## v10.0.0-beta.1 [2025-07-11]
 
 ### Notes
 
@@ -65,7 +77,6 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 	- Instead, significantly mitigate with `set -e` with `set -E`, `set -o pipefail`, and `shopt -s inherit_errexit`.
 - Added `set -u`, which required a significant amount of refactoring (mostly via search and replace) to give all numbered args default empty values, e.g. "${1:-}". That didn't change any existing expected behavior. Existing unit tests still pass.
 
-
 ### Removed
 
 - Removed or refactored most or all *_byecho() functions. [≅2025-07]
@@ -75,37 +86,45 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 
 - Unit tested almost all functions. Still a several more to go, but which have all been in literal production for many years. [≅2025-07-06 to 11]
 
-
 ## 20250608
+
 - Added handy and robust _fRemoveOldLogs().
 
 ## 20250606-07
+
 - Added _fGetFileSize(), _fTime_EpochAndMS_TruncateMS(), _fGetFileTime_mtime()
 - Added _fNormStr() back in.
 
 ## 20250319
+
 - Increased argument passing from 20 to 50.
 - Added _fAppendStr(), _fPad_Right(), _fBase10to32c(), _fBase10to256j1(), _ConditionalSandwichStr(), _fEchoVals()
 - Removed: _fstrAppend_byglobal_val(). ##			- Improved fParseArgs().
 - Replaced _fConditionalStr_byecho() with _fTernaryStr(), with different interface.
 
 ## 20241024
+
 - Updated fEcho*() related stuff.
--
+
 ## 20240928
+
 - Fixed args-string building loop bug in fParseArgs().
 
 ## 20240914
+
 - Added some utility functions.
 
 ## 20240912
+
 - Improved error output.
 - Fixed bug in fThrowError().
 
 ## 20240623
+
 - Fixed a bug that added an extra line at end and exited with 1, when showing syntax.
 
 ## 20190926
+
 - Added debugging functions and variables: _dbgNestLevel, _dbgIndentEachLevelBy, _fdbgEnter1(), _fdbgEgress1(), _fdbgEcho1(), _fPipeAllRawStdout1()
 - Changed everything beginning with "__" to "_"
 - Added to the end of every "function(){" statement:
@@ -117,6 +136,7 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 - Renamed functions that returns something by global variable, *_byglobal
 
 ## 20190925
+
 - Added functions:
 	fTemplate(), _fUnitTest1(), _fAssert_AreEqual1(), _fAssert_Eval_AreEqual1(), _fStrJustify1_byecho()
 	_fdbgEchoVarAndVal1(), _fIndent_relative1(), _fStrKeepLeftN1_byecho(), _fStrKeepRightN1_byecho(), _fToInt1_byecho(), _fIndent_rltv1_pipe()
@@ -134,123 +154,164 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 - Added global constant: doDebug=0.
 
 ## 20190925
+
 - Added _fPipe_Blake12_Base64URL(), _fPipe_Uuid_Base164URL()
 - Renamed _Indent() to _fIndent_abs1_pipe()
 
 ## 20190923
+
 - Converted single brackets to double, for more robusteness, ease of updating to advanced features, and consistency.
 
 ## 20190920
+
 - Copied entire contents from ${meName}, which has many improvements to generic & template stuff:
 	- Function logic
 	- Comments (e.g. function documentation)
 	- Expanded argument handling
 	- Structure
 
-## 20190917 Slight updates and potential bug fixes.
+## 20190917
+
+- Slight updates and potential bug fixes.
 
 ## 20190911
+
 - Refactor into one simpler template, removing most rarely-used functions, and dozens of other functions that can and should be handled in a more bash-idiomatic way.
 
 ## 20171217
-	- Ill-fated, short-lived start of 0_library_v3 fork, that was going to refactor most functions to work more
-	  consistently, but too non-idiomatically. (E.g. everything would return literal "true", "false", or "error",
-	  with useful values returned in named variables.)
+
+- Ill-fated, short-lived start of 0_library_v3 fork, that was going to refactor most functions to work more consistently, but too non-idiomatically. (E.g. everything would return literal "true", "false", or "error", with useful values returned in named variables.)
 
 ## 20171217
-	- Forked 0_library_v1 to _v2 (leaving _v1 intact as another 'legacy' library), and:
-	- Moved execution logic to library.
-	- Fuller use of fPackArgs() and fUnpackArgs().
-	- Created unit-testing functions.
-	- Created generic logging functionality.
+
+- Forked 0_library_v1 to _v2 (leaving _v1 intact as another 'legacy' library), and:
+- Moved execution logic to library.
+- Fuller use of fPackArgs() and fUnpackArgs().
+- Created unit-testing functions.
+- Created generic logging functionality.
 
 ## 20170314
-	- Forked to 0_library_v1, leaving now 'legacy' 0_library intact as its referenced by many scripts.
-	- Added several regex, math, and hex related functions. As well as fForceUmount(), fIsMounted() fDo_IgnoreError(), fEchoAndDo_IgnoreError().
+
+- Forked to 0_library_v1, leaving now 'legacy' 0_library intact as its referenced by many scripts.
+- Added several regex, math, and hex related functions. As well as fForceUmount(), fIsMounted() fDo_IgnoreError(), fEchoAndDo_IgnoreError().
 
 ## 20161003
-	- Created 'fPackedArgs*()' functions to solve the problem of quoted arguments getting unquoted with multiple passes among programs and scripts (especially sh, with its limited number of directly [non-shift] addressable args).
 
-#
----
-
+- Created 'fPackedArgs*()' functions to solve the problem of quoted arguments getting unquoted with multiple passes among programs and scripts (especially sh, with its limited number of directly [non-shift] addressable args).
 
 ## 20190921
+
 - Added virtualization detection, and video driver detection.
 
 ## 20160925
+
 - Moved some bare-bones necessary code out of 0_library back to here.
 
 ## 20160922
+
 - First version of separate '0_library' script, that this template sources. Most functions moved there.
 
 ## 20160913
+
 - Minor additions and fixes.
 
 ## 20160907
 
+- (Undocumented changes)
+
 ## 20160905
+
+- (Undocumented changes)
 
 ## 20160831
 
+- (Undocumented changes)
+
 ## 20160830
+
+- (Undocumented changes)
 
 ## 20160827
 
+- (Undocumented changes)
+
 ## 20160725
+
+- (Undocumented changes)
 
 ## 20150925
 
+- (Undocumented changes)
+
 ## 20150504
+
 - Added fRunForked(), fRunForked_AndLog(), fDoAsync_AndLog().
 
 ## 20141103
+
 - Added fEchoOrEchoAndDo(), fEchoOrEchoAndDo_IgnoreError(), fStrIndentAllLines().
 
 ## 20141103
+
 - Minor fixes.
 
 ## 20141011
+
 - Minor fixes.
 
 ## 20141002
+
 - Minor fixes.
 
 ## 20140624
+
 - Added some filesystem functions.
 
 ## 20140615
+
 - Added a few string-handling functions.
 
 ## 20140519
+
 - Better error-handling.
 
 ## 20140304
+
 - Bug fixes and cleanup.
 
 ## 20140224
+
 - Bug fixes and a few new functions.
 
 ## 20140206-19
+
 - Added about a dozen functions.
 
 ## 20140129
+
 - Minor bug fixes
 
 ## 20130422
 
+- (Undocumented changes)
+
 ## 20121213
+
 - Major update with initial execution moved into 0_library.
 
 ## 20121213
+
 - Added custom error traps.
 
 ## 20120908
+
 - Moved generic constants, variables, and functions to 0_jclibrary001-v001.
 
 ## 20120822
+
 - Minor fixes.
 
 ## 20110506 First official version.
+
 - Added logic to execute arbitrary subroutine as sudo, without necessarily setting cgtbProfile flag.
 - Added profiling of functions here, since removed from execution engine and exit handler.

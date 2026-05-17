@@ -26,6 +26,7 @@ Meaning of numbers for columns: "Pri" = Priority, "Eff" = Effort:
 | 20260309 |        | 1 |   |          |    |           | Refactor monolithic template into versioned `source` modules, starting small.
 | 20260309 |        | 1 |   |          |    |           | Refactor firs module's error-handling to not `exit` if top-level script is `source`d.
 | 20260309 |        | 2 |   |          |    |           | Create a build/git script that compresses a version, copies modules to path, and updates git.
+| 20260309 |        | 3 |   |          |    |           | Change license from GPLv3 to 2.
 | 20250823 |        | 1 |   |          |    |           | fIsNum(): Don't call __pGetX_common(). | It's causing recursive calls into __pGetX_common(), which errors with re-use of fIsNum ref variable.
 | 20250823 |        | 1 |   |          |    |           | fIsInt(): Don't call __pGetX_common(). | It's causing recursive calls into __pGetX_common(), which errors with re-use of fIsNum ref variable.
 | 20250823 |        | 1 |   |          |    |           | fGetFormattedNum(): Don't rely on fIsNum() calling __pGetX_common().

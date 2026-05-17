@@ -55,5 +55,5 @@ This template helps you follow those best-practices.
 
 ## Copyright and license
 
-> © 2025 Jim Collier (bdYkHbGhCRb82V_TrJ0uLoPemb2EG5pbMNhBkYhb4BI=)<br>
-> This work is licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later). License in the LICENSE file, or you can view it at [gnu.org/licenses/gpl-3.0](https://www.gnu.org/licenses/gpl-3.0).
+> Copyright © 2026 Jim Collier (ID: 1cv◂‡Vᛦ)<br />
+> Licensed under [The MIT License (MIT)](https://mit-license.org/). No warranty.

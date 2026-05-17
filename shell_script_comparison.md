@@ -24,6 +24,7 @@
 	- [Rust, C++](#rust-c)
 	- [Go](#go)
 - [The winner](#the-winner)
+- [Copyright and license](#copyright-and-license)
 
 <!-- /TOC -->
 
@@ -217,3 +218,8 @@ Verdict: 🤷 The tiny, dependency-free executables, that can be compiled on any
 Unfortunately there is no clear winner. Everything has tradeoffs. YSH is nice, but a little janky under the hood and not universal. NuShell is nice and more broadly/easily obtainable, but slow. Go is the cross-platform/no-depedency winner, but only when compiled. PowerShell has type-safety, JIT, and OO - but has some subtle breaking version issues over time, and is not trivially easy to obtain. JavaScript is not well-suited for shell scripting.
 
 Non-starters: Python, C++, Rust, CMD, Java. With the worst being Python for long-term script stability.
+
+## Copyright and license
+
+> Copyright © 2025-2026 Jim Collier (ID: 1cv◂‡Vᛦ)<br>
+> Licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.en). No warranty.

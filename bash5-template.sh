@@ -28,8 +28,10 @@
 
 ##	Purpose .............: See fAbout().
 ##	Args ................: See fSyntax().
-##	Copyright and license: See fCopyright().
-##	History:
+
+## Copyright © 2026 Jim Collier (ID: 1cv◂‡Vᛦ)<br />
+## Licensed under The MIT License (MIT), https://mit-license.org/. No warranty.
+
 
 ## Constants
 if [[ -z "${thisVersion+x}" ]]; then
@@ -49,8 +51,8 @@ fi
 fCopyright(){ ((doQuietly)) && return;
 	fEcho_Clean ""
 	fEcho_Clean "${meName} ${thisVersion}, Copyright © ${thisCopyrightYear} ${thisAuthor}."
-	fEcho_Clean "Built on 'bash5-template.sh' ${templateVersion}, Copyright © ${thisCopyrightYear} ${thisAuthor}."
-	fEcho_Clean "Both are licensed GPLv3+: GNU GPL version 3 or later. Full text at"
+	fEcho_Clean "Copyright © ${thisCopyrightYear} ${thisAuthor}."
+	fEcho_Clean "Licensed GPLv3+: GNU GPL version 3 or later. Full text at"
 	fEcho_Clean "  https://www.gnu.org/licenses/gpl-3.0.en.html"
 	fEcho_Clean "" ;:;}
 fAbout(){ ((doQuietly)) && return;

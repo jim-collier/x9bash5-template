@@ -10,14 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - *With the exception of much older entries, which A) didn't use this convention, and B) have been edited down for brevity since much of the code discussed has been long-gone since before putting the project on github. This more standardized changelog format wasn't followed until 2025-07-10. Anything older than that is a tossup.*
 
-## v10.0.0-beta.2 [2026-04-09]
+## v10.0.0-beta2 - 2026-04-09
 
 ### Changed
 
 - Fixed errors highlighted by linter in some docs.
 - Added some to-dos.
 
-## v10.0.0-beta.1 [2025-07-11]
+## v10.0.0-beta1 - 2025-07-11
 
 ### Notes
 

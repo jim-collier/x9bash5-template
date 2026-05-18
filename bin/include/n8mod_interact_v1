@@ -74,23 +74,23 @@ fShowCopyright(){
 		*) fThrowError "Sorry, I haven't been programmed yet to display license '${LICENSE_SPDX}'." ;;
 	esac
 	copyrightStr+="No warranty."
-	fEcho_Clean; fEcho_Clean "${copyrightStr}"; fEcho_Clean
+	fEcho_Clean; fEcho_Clean_byref copyrightStr; fEcho_Clean
 	wasShown_Copyright=1
 }
 fShowAbout(){
 	((doQuietly || wasShown_About)) && return 0
 	## Arg
-	local -n varName_AboutText_t5j9j=$1
-	[[ -v varName_AboutText_t5j9j && -n "${varName_AboutText_t5j9j:-}" ]] || fThrowError "The one argument to this function must be a variable containing 'about' text."
-	fEcho_Clean; fEcho_Clean "${varName_AboutText_t5j9j}"; fEcho_Clean
+	local -n ptr_AboutText_t5j9j=$1
+	[[ -v ptr_AboutText_t5j9j && -n "${ptr_AboutText_t5j9j:-}" ]] || fThrowError "The one argument to this function must be a caller nameref containing 'about' text."
+	fEcho_Clean; fEcho_Clean_byref ptr_AboutText_t5j9j; fEcho_Clean
 	wasShown_About=1
 }
 fShowSyntax(){
 	((doQuietly || wasShown_Syntax)) && return 0
 	## Arg
-	local -n varName_SyntaxText_t5j9j=$1
-	[[ -v varName_SyntaxText_t5j9j && -n "${varName_SyntaxText_t5j9j:-}" ]] || fThrowError "The one argument to this function must be a variable containing 'syntax' text."
-	fEcho_Clean; fEcho_Clean "${varName_SyntaxText_t5j9j}"; fEcho_Clean
+	local -n ptr_SyntaxText_t5j9j=$1
+	[[ -v ptr_SyntaxText_t5j9j && -n "${ptr_SyntaxText_t5j9j:-}" ]] || fThrowError "The one argument to this function must be a caller nameref containing 'syntax' text."
+	fEcho_Clean; fEcho_Clean_byref ptr_SyntaxText_t5j9j; fEcho_Clean
 	wasShown_Syntax=1
 }
 
@@ -143,7 +143,10 @@ declare -i isSourced_t5ja2=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 [[ -n "${LICENSE_SPDX}"                   ]]  ||  fThrowError "The constant 'LICENSE_SPDX' must be defined by the calling script, for this module to work."
 declare -f  fShowAbout_Local     &>/dev/null  ||  fThrowError "The function 'fShowAbout_Local' must be defined by the calling script, for this module to work. It may in turn call the fShowAbout() helper function in this module."
 declare -f  fShowSyntax_Local    &>/dev/null  ||  fThrowError "The function 'fShowSyntax_Local' must be defined by the calling script, for this module to work. It may in turn call the fShowSyntax() helper function in this module."
+#declare -f  fLoadModule_v1      &>/dev/null  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
 
+## Load dependency modules other than n8mod_code_v1.
+#[[ -v N8MOD_STRING_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_string_v1
 
 ## Flag this module as loaded.
 [[ -v N8MOD_INTERACT_V1_IS_LOADED ]] || declare -gr N8MOD_INTERACT_V1_IS_LOADED=1

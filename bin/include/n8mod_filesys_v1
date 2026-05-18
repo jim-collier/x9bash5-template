@@ -22,7 +22,7 @@
 ##	Module history: At bottom of script. (Maintained separately from and/or in addition to, cloud-based version control.)
 
 ## Bail if already loaded
-[[ "${N8MOD_STRING_V1_IS_LOADED:-}" == "1" ]] && return
+[[ "${N8MOD_FILESYS_V1_IS_LOADED:-}" == "1" ]] && return
 
 ## The following are defined here only for linter support.
 ## They are required to be defined first by the calling script, so should never get inside the if/fi.
@@ -34,52 +34,64 @@
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## Globals for this module. (The existence check is redundant but that's OK.)
-if [[ ! -v THIS_LIB_FILE_PATH_t5jec ]]; then
+if [[ ! -x THIS_LIB_FILE_PATH_t5jeb ]]; then
 	## Constants
-	declare -gr THIS_LIB_FILE_PATH_t5jec="$(realpath -e "${BASH_SOURCE[0]}")"
-	declare -gr THIS_LIB_FILE_NAME_t5jec="$(basename "${THIS_LIB_FILE_PATH_t5jec}")" #...: Replace with native bash function when ready.
-	declare -gr THIS_LIB_DIR_PATH_t5jec="$(dirname "${THIS_LIB_FILE_PATH_t5jec}")" #.....: Replace with native bash function when ready.
+	declare -gr THIS_LIB_FILE_PATH_t5jeb="$(realpath -e "${BASH_SOURCE[0]}")"
+	declare -gr THIS_LIB_FILE_NAME_t5jeb="$(basename "${THIS_LIB_FILE_PATH_t5jeb}")" #...: Replace with native bash function when ready.
+	declare -gr THIS_LIB_DIR_PATH_t5jeb="$(dirname "${THIS_LIB_FILE_PATH_t5jeb}")" #.....: Replace with native bash function when ready.
 fi
 
-##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Quoted params
-if [[ ! -v BUILD_QUOTED_PARAMS_CHECK_PATTERN ]]; then
-	declare -gr  BUILD_QUOTED_PARAMS_CHECK_PATTERN=$'[][[:space:]|&;()<>`*?$!~{}\'\"#=,%@\\]'  ## If an arg has any of these in it, it needs quoting.
-	declare -gri BUILD_QUOTED_PARAMS_MAX_BLANK=10
-fi
-fBuildQuotedParams(){
-	## Arg 1
-	local -n ptr_Output_1mtkp9p=${1:-} ; shift || :  ## The caller variable to instert the return value into.
-	## Validate
-	[[ -v ptr_Output_1mtkp9p ]] || fThrowError "Calling function must pass a nameref to receive this function's output."
-	## Init
-	ptr_Output_1mtkp9p=""
-	local retVal=""
-	## Determine highest used index
-	local -i maxIdx=0 blankRun=0 i=0
-	for ((i=1; ; i++)); do
-		if [[ -n "${!i}" ]]; then maxIdx=$i; blankRun=0
-		else                      (( ++blankRun >= BUILD_QUOTED_PARAMS_MAX_BLANK )) && break
-		fi
-	done
-	## Build string, quote any args as necessary
-	for i in $(seq 1 $maxIdx); do
-		((i > 1)) && retVal+=" "  ## Pad with space if necessary
-		if [[ "${!i}" =~ ${BUILD_QUOTED_PARAMS_CHECK_PATTERN} ]]; then retVal+="\"${!i}\""
-		else                                                           retVal+="${!i}"
-		fi
-	done
-	## Return the string
-	ptr_Output_1mtkp9p="${retVal}"
+
+#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Functions
+
+fDoesPathExist(){
+	## Purpose: Errors if path variable is empty or nonexistent.
+	## Arg:
+	local -n ptr_Path_t5jem=${1:-}  ## Arg: Caller nameref holding path.
+	[[ -v ptr_Path_t5jem  ]] || fThrowError "Calling function must pass a nameref to supply the input value to this function."
+	## Logic
+	[[ -n "${ptr_Path_t5jem}" ]] || fThrowError "No path specified."
+	[[ -e "${ptr_Path_t5jem}" ]] || return 1
+	return 0
 }
+
+fDoesDirExistWithContents(){
+	## Purpose: Errors if path variable is empty or nonexistent.
+	## Arg:
+	local -n ptr_Path_t5jer=${1:-}  ## Arg: Caller nameref holding path.
+	[[ -v ptr_Path_t5jer ]] || fThrowError "Calling function must pass a nameref to supply the input value to this function."
+	## Logic
+	[[ -n "${ptr_Path_t5jer}" ]]                        ||  fThrowError  "No directory specified."
+	[[ -d "${ptr_Path_t5jer}" ]]                        ||  return 1
+	[[ -n "$(ls -1A "${ptr_Path_t5jer%%/}/" 2>/dev/null || true)" ]] || return 1
+	return 0
+}
+
+fPathMustExist(){
+	## Purpose: Returns with 0 status if exists, 1 if null or not exist.
+	## Args:
+	local -n ptr_Path_t5jek=${1:-}  ## Arg: Caller nameref holding path.
+	[[ -v ptr_Path_t5jek ]] || fThrowError "Calling function must pass a nameref to supply the input value to this function."
+	## Logic
+	[[ -n "${ptr_Path_t5jek}" ]] || fThrowError "No path specified."
+	[[ -e "${ptr_Path_t5jek}" ]] || fThrowError "Specified path not found: '${ptr_Path_t5jek}'."
+}
+
+fMustBeInPath(){
+	local -r programToCheckForInPath="${1:-}"
+	[[ -n "${programToCheckForInPath}"                              ]]  ||  { fThrowError "Not program specified."                        ; return 1; }
+	[[ -n "$(which ${programToCheckForInPath} 2>/dev/null || true)" ]]  ||  { fThrowError "Not found in path: ${programToCheckForInPath}" ; return 1; }
+}
+
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## Script initialization
 
 ## Check if sourced
-declare -i isSourced_t5jec=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5jec=1
-((isSourced_t5jec)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
+declare -i isSourced_t5jeb=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5jeb=1
+((isSourced_t5jeb)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
 
 ## Validate the assumption that required n8mod_core_v1 dependency is already loaded
 [[ "${N8MOD_CORE_V1_IS_LOADED:-}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
@@ -90,8 +102,11 @@ declare -i isSourced_t5jec=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 #[[ -n "${THIS_DIRPATH:-}"            ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
 #declare -f  fLoadModule_v1  &>/dev/null  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
 
+## Load dependency modules other than n8mod_code_v1.
+#[[ -v N8MOD_STRING_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_string_v1
+
 ## Flag this module as loaded.
-[[ -v N8MOD_STRING_V1_IS_LOADED ]] || declare -gr N8MOD_STRING_V1_IS_LOADED=1
+[[ -v N8MOD_FILESYS_V1_IS_LOADED ]] || declare -gr N8MOD_FILESYS_V1_IS_LOADED=1
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••

@@ -22,7 +22,7 @@
 ##	Module history: At bottom of script. (Maintained separately from and/or in addition to, cloud-based version control.)
 
 ## Bail if already loaded
-[[ "${N8MOD_STRING_V1_IS_LOADED:-}" == "1" ]] && return
+[[ "${N8MOD_PROCESS_V1_IS_LOADED:-}" == "1" ]] && return
 
 ## The following are defined here only for linter support.
 ## They are required to be defined first by the calling script, so should never get inside the if/fi.
@@ -34,64 +34,57 @@
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## Globals for this module. (The existence check is redundant but that's OK.)
-if [[ ! -v THIS_LIB_FILE_PATH_t5jec ]]; then
+if [[ ! -v THIS_LIB_FILE_PATH_t5jhk ]]; then
 	## Constants
-	declare -gr THIS_LIB_FILE_PATH_t5jec="$(realpath -e "${BASH_SOURCE[0]}")"
-	declare -gr THIS_LIB_FILE_NAME_t5jec="$(basename "${THIS_LIB_FILE_PATH_t5jec}")" #...: Replace with native bash function when ready.
-	declare -gr THIS_LIB_DIR_PATH_t5jec="$(dirname "${THIS_LIB_FILE_PATH_t5jec}")" #.....: Replace with native bash function when ready.
+	declare -gr THIS_LIB_FILE_PATH_t5jhk="$(realpath -e "${BASH_SOURCE[0]}")"
+	declare -gr THIS_LIB_FILE_NAME_t5jhk="$(basename "${THIS_LIB_FILE_PATH_t5jhk}")" #...: Replace with native bash function when ready.
+	declare -gr THIS_LIB_DIR_PATH_t5jhk="$(dirname "${THIS_LIB_FILE_PATH_t5jhk}")" #.....: Replace with native bash function when ready.
 fi
 
-##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Quoted params
-if [[ ! -v BUILD_QUOTED_PARAMS_CHECK_PATTERN ]]; then
-	declare -gr  BUILD_QUOTED_PARAMS_CHECK_PATTERN=$'[][[:space:]|&;()<>`*?$!~{}\'\"#=,%@\\]'  ## If an arg has any of these in it, it needs quoting.
-	declare -gri BUILD_QUOTED_PARAMS_MAX_BLANK=10
-fi
-fBuildQuotedParams(){
-	## Arg 1
-	local -n ptr_Output_1mtkp9p=${1:-} ; shift || :  ## The caller variable to instert the return value into.
-	## Validate
-	[[ -v ptr_Output_1mtkp9p ]] || fThrowError "Calling function must pass a nameref to receive this function's output."
-	## Init
-	ptr_Output_1mtkp9p=""
-	local retVal=""
-	## Determine highest used index
-	local -i maxIdx=0 blankRun=0 i=0
-	for ((i=1; ; i++)); do
-		if [[ -n "${!i}" ]]; then maxIdx=$i; blankRun=0
-		else                      (( ++blankRun >= BUILD_QUOTED_PARAMS_MAX_BLANK )) && break
-		fi
-	done
-	## Build string, quote any args as necessary
-	for i in $(seq 1 $maxIdx); do
-		((i > 1)) && retVal+=" "  ## Pad with space if necessary
-		if [[ "${!i}" =~ ${BUILD_QUOTED_PARAMS_CHECK_PATTERN} ]]; then retVal+="\"${!i}\""
-		else                                                           retVal+="${!i}"
-		fi
-	done
-	## Return the string
-	ptr_Output_1mtkp9p="${retVal}"
+
+#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Run stuff
+fRunGui(){
+	local -r toExec_1mvrbsv="${1:-}"  ## Only used for testing validity. When executed, it's just another "parameter".
+	[[ -n "${toExec_1mvrbs1}" ]] || fThrowError "Nothing specified to run."
+	local quotedParams=""; fBuildQuotedParams  quotedParams  "${@}"
+	echo "Executing: ( (eval \"nohup ${quotedParams}  &>/dev/null\") & disown ) &>/dev/null"  ## Debug output to console. Users won't see since this is run by GUI.
+	( (eval "nohup ${quotedParams}  &>/dev/null") & disown ) &>/dev/null
 }
+fRunSilentlyWithoutError(){ fRunGui  "${@}"; }
+fRunGuiAsSudo(){
+	local -r toExec_1mvrbs1="${1:-}"  ## Only used for testing validity. When executed, it's just another "parameter".
+	[[ -n "${toExec_1mvrbs1}" ]] || fThrowError "Nothing specified to run."
+	local quotedParams=""
+	fBuildQuotedParams  quotedParams  "${@}"
+	sudo true
+	echo "Executing: ( (eval \"sudo  DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus XDG_RUNTIME_DIR=/run/user/0  ${quotedParams}  &>/dev/null\") & disown ) &>/dev/null"  ## Debug output to console. Users won't see since this is run by GUI.
+	( (eval "sudo  DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus XDG_RUNTIME_DIR=/run/user/0  ${quotedParams}  &>/dev/null") & disown ) &>/dev/null
+}
+
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## Script initialization
 
 ## Check if sourced
-declare -i isSourced_t5jec=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5jec=1
-((isSourced_t5jec)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
+declare -i isSourced_t5jhk=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5jhk=1
+((isSourced_t5jhk)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
 
 ## Validate the assumption that required n8mod_core_v1 dependency is already loaded
 [[ "${N8MOD_CORE_V1_IS_LOADED:-}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
 
 ## Validate this module interface as implemented by consuming script.
-#[[ -n "${THIS_FILEPATH:-}"           ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
-#[[ -n "${THIS_FILENAME:-}"           ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
-#[[ -n "${THIS_DIRPATH:-}"            ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
-#declare -f  fLoadModule_v1  &>/dev/null  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+#[[ -n "${THIS_FILEPATH:-}"          ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_FILENAME:-}"          ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_DIRPATH:-}"           ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
+declare -f  fLoadModule_v1  &>/dev/null  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+
+## Load dependency modules other than n8mod_code_v1.
+[[ -v N8MOD_STRING_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_string_v1
 
 ## Flag this module as loaded.
-[[ -v N8MOD_STRING_V1_IS_LOADED ]] || declare -gr N8MOD_STRING_V1_IS_LOADED=1
+[[ -v N8MOD_PROCESS_V1_IS_LOADED ]] || declare -gr N8MOD_PROCESS_V1_IS_LOADED=1
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••

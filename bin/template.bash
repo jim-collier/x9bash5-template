@@ -29,7 +29,7 @@
 if [[ ! -v doQuietly ]]; then
 
 	## Required by this template
-	declare -gri ARGS_AT_LEAST_ONE_IS_REQUIRED=0
+	declare -gri ARGS_AT_LEAST_ONE_IS_REQUIRED=1
 	declare -gri ARGS_MAX_POSITIONAL_COUNT=0
 
 	## Required by n8mod_core_v1
@@ -89,7 +89,7 @@ fMain(){ :;
 
 	## Arguments
 	local -a allArgsArr=()
-	fParseArgs  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
+	fParseArgs  "${@}"
 	readonly allArgsArr
 
 	## Post-arg validation
@@ -130,41 +130,40 @@ fParseArgs(){
 	## Look for stars "✶✶✶✶✶✶✶✶" for places to custom-modify unique instances of this function.
 
 	## Check for need to show help etc.
-	{ ((ARGS_AT_LEAST_ONE_IS_REQUIRED)) && [[ -z "${1:-}${2:-}${3:-}${4:-}" ]]; } && { fShowCopyright; fShowAbout_Local; fShowSyntax_Local; return 1; }
 	case " ${*,,} " in
 		*" -h "*|*" --help "*|*" -help "*)                               fShowCopyright; fShowAbout_Local; fShowSyntax_Local  ; exit 0 ;;
 		*" -a "*|*" --about "*|*" -about "*)                             fShowCopyright; fShowAbout_Local                 ; exit 0 ;;
 		*" -v "*|*" --version "*|*" -version "*|*" --ver "|*" -ver "**)  fShowVersion; doQuietly=1                        ; exit 0 ;;
 	esac
 
-	## GENERIC (don't modify): Populate args array and string.
-	## Note: Args are 1-based index, but the resulting array of args at the end is a normal 0-based index.
-	local -r -i maxPracticalArgCount=50  ## In Bash we have 2MB of args, or somewhere around 10k by count. For readabality and performance, keep it MUCH lower, say ~20-99.
-	local    -i totalArgCount=0
-	local    -i switchCounter=0
-	allArgsArr=()
-	## Store the highest non-empty argument number.
-	local -i i; i=0
-	for ((i=1; i<=maxPracticalArgCount; i++)); do [[ -n "${!i:-}" ]] && totalArgCount=$i; done
-	local -ri totalArgCount=$totalArgCount
-	## Build args str and array, including empty args - up to the last non-empty arg.
-	local thisStr=""
-	for ((i=1; i<=totalArgCount; i++)); do
-		thisStr="${!i}"
-		thisStr="${thisStr//\"/″}"; thisStr="${thisStr//\'/′}"
-		allArgsArr+=("${thisStr}")
-	done
+	## Check for need to show help
+	((ARGS_AT_LEAST_ONE_IS_REQUIRED  &&  $# <= 0)) && { fShowCopyright; fShowAbout_Local; fShowSyntax_Local; return 1; }
 
 	## GENERIC: Variables for loop
+	local -ri MAX_EMPTY_SEQUENTIAL_ARGS=10  ## Bail after this many consecutive empty args
 	local    tmpStr=""
 	local    currentArg=""
 	local    lastSwitch=""
+	local -i switchCounter=0
 	local -i expectingSwitchParamForNextArg=0
 	local -i positionalArgCounter=0
+	local -i emptyRunCount=0
 
 	## Process arguments
-	for currentArg in "${allArgsArr[@]}"; do
+	for currentArg in "${@}"; do
 		#fEcho_Clean "Debug: currentArg ........: '${currentArg}'"
+
+		## Track consecutive empty args, bail if too many.
+		if [[ -z "${currentArg}" ]]; then
+			(( ++emptyRunCount ))
+			(( emptyRunCount >= MAX_EMPTY_SEQUENTIAL_ARGS )) && break
+			continue  ## If empty but not bailing, skip to next
+		else
+			emptyRunCount=0
+		fi
+
+		## Sanitize quotes
+		currentArg="${currentArg//\"/″}"; currentArg="${currentArg//\'/′}"
 
 		## Test if an option switch or not
 		if [[ -n "$(echo "${currentArg}" | grep -P "^\-(\-?)[^\ \-]" 2>/dev/null || true)" ]]; then
@@ -173,7 +172,7 @@ fParseArgs(){
 
 			## Check if this was supposed to NOT be a unary switch (eg expecting a parameter after previous long-option)
 			((expectingSwitchParamForNextArg)) && fThrowError "Expecting a long-option argument for '${lastSwitch}', instead got another option '${currentArg}'."
-			switchCounter=$((switchCounter + 1))
+			((++switchCounter))
 
 			## Validate switches, and act on unary switches
 			lastSwitchAsPassed="${currentArg}"
@@ -211,7 +210,7 @@ fParseArgs(){
 
 			else
 				## Well it must be a positional arg then.
-				positionalArgCounter=$((positionalArgCounter + 1))
+				((++positionalArgCounter))
 				((positionalArgCounter > ARGS_MAX_POSITIONAL_COUNT))  && fThrowError "Too many positional arguments: ${positionalArgCounter}, for max of ${ARGS_MAX_POSITIONAL_COUNT}."
 				#fEcho_Clean "Debug: positional arg #${positionalArgCounter}: '${currentArg}'"
 
@@ -226,7 +225,7 @@ fParseArgs(){
 
 			fi
 		fi
-	done
+	done; :
 	((expectingSwitchParamForNextArg)) && fThrowError "Never received a parameter for switch '--${lastSwitch}'."
 
 :;}
@@ -325,20 +324,22 @@ declare -i isSourced_t5ja1=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 
 ## Load modules
 	fLoadModule_v1  'n8mod_core_v1'
-	fLoadModule_v1  'n8mod_string_v1'
-	fLoadModule_v1  'n8mod_interact_v1'
-#	fLoadModule_v1  'n8mod_oop_v1'
-#	fLoadModule_v1  'n8mod_number_v1'
-#	fLoadModule_v1  'n8mod_array_v1'
-#	fLoadModule_v1  'n8mod_logging_v1'
-#	fLoadModule_v1  'n8mod_filesys_v1'
-#	fLoadModule_v1  'n8mod_zfs_v1'
-#	fLoadModule_v1  'n8mod_btrfs_v1'
-#	fLoadModule_v1  'n8mod_sqlite_v1'
-#	fLoadModule_v1  'n8mod_postgresql_v1'
+	[[ -v N8MOD_PROCESS_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_process_v1'
+	[[ -v N8MOD_STRING_V1_IS_LOADED     ]] || fLoadModule_v1  'n8mod_string_v1'
+	[[ -v N8MOD_FILESYS_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_filesys_v1'
+	[[ -v N8MOD_INTERACT_V1_IS_LOADED   ]] || fLoadModule_v1  'n8mod_interact_v1'
+#	[[ -v N8MOD_OOP_V1_IS_LOADED        ]] || fLoadModule_v1  'n8mod_oop_v1'
+#	[[ -v N8MOD_NUMBER_V1_IS_LOADED     ]] || fLoadModule_v1  'n8mod_number_v1'
+#	[[ -v N8MOD_ARRAY_V1_IS_LOADED      ]] || fLoadModule_v1  'n8mod_array_v1'
+#	[[ -v N8MOD_LOGGING_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_logging_v1'
+#	[[ -v N8MOD_ZFS_V1_IS_LOADED        ]] || fLoadModule_v1  'n8mod_zfs_v1'
+#	[[ -v N8MOD_BTRFS_V1_IS_LOADED      ]] || fLoadModule_v1  'n8mod_btrfs_v1'
+#	[[ -v N8MOD_SQL_V1_IS_LOADED        ]] || fLoadModule_v1  'n8mod_sql_v1'
+#	[[ -v N8MOD_SQLITE3_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_sqlite3_v1'
+#	[[ -v N8MOD_POSTGRESQL_V1_IS_LOADED ]] || fLoadModule_v1  'n8mod_postgresql_v1'
 
 ## Kick everything off
-fInit "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
+fInit "${@}"
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••

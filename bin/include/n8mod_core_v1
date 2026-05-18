@@ -60,22 +60,22 @@ fi
 ## Execution control. Parent script should invoke this when ready to begin.
 fInit(){
 	if [[ -n "${RELAUNCH_SENTINELVAL:-}"  &&  "${1:-}" == "${RELAUNCH_SENTINELVAL:-}" ]]; then
-
 		## Reentrant (e.g. relaunched as sudo): invoke the function specified.
 		## Doesn't have to be reentrant, caller could use this to start something other than fMain().
 		## In this form, args:
 		##	Arg1: Literally "${RELAUNCH_SENTINELVAL}"
 		##	Arg2: Function name in calling parent script to launch with remaining arguments.
+
 		[[ -n "${2:-}" ]]               || { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: A valid 'relaunch' sentinel value was passed as arg1, but no function name to branch to was passed as arg2.\n" ; return 1; }
 		declare -f "${2:-}" &>/dev/null || { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: The function name passed as arg2 isn't defined in this environment: '${2:-}'.\n"                               ; return 1; }
-		${2:-} "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}" "${33:-}" "${34:-}"
+		${2:-} "${@:3}"
 
 	else
-
 		## The first and possibly/usually only entry point. Args are whatever the script needs.
 		## fMain() must exist in calling parent script.
+
 		declare -f "fMain" &>/dev/null || { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: The function fMain() isn't defined in this environment: '${2:-}'.\n" ; return 1; }
-		fMain  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
+		fMain  "${@}"
 
 	fi
 }
@@ -88,29 +88,35 @@ fInit(){
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## Username and home
 fGetOgUserName(){
-	local -n varName_s74rg=$1  ## Arg <REQUIRED>: Variable reference for result.
+	## Args:
+	local -n ptr_Output_s74rg=${1:-}  ## Arg <REQUIRED>: Nameref for return value.
+	## Validate
+	[[ -v ptr_Output_s74rg ]] || fThrowError "Calling function must pass a nameref to receive this function's output."
 	local    retVal=""
-	varName_s74rg=""
-	retVal="${USER}"                         ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { varName_s74rg="${retVal}"; return 0; }
-	retVal="${SUDO_USER}"                    ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { varName_s74rg="${retVal}"; return 0; }
-	retVal="$(whoami  2>/dev/null || true)"  ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { varName_s74rg="${retVal}"; return 0; }
-	retVal="$(logname 2>/dev/null || true)"  ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { varName_s74rg="${retVal}"; return 0; }
-	retVal="${USER}"                         ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { varName_s74rg="${retVal}"; return 0; }
-	retVal="${USER}"                         ;   [[ -n "${retVal}" ]]                                     && { varName_s74rg="${retVal}"; return 0; }
-	retVal="$(whoami  2>/dev/null || true)"  ;   [[ -n "${retVal}" ]]                                     && { varName_s74rg="${retVal}"; return 0; }
+	ptr_Output_s74rg=""
+	retVal="${USER}"                         ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { ptr_Output_s74rg="${retVal}"; return 0; }
+	retVal="${SUDO_USER}"                    ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { ptr_Output_s74rg="${retVal}"; return 0; }
+	retVal="$(whoami  2>/dev/null || true)"  ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { ptr_Output_s74rg="${retVal}"; return 0; }
+	retVal="$(logname 2>/dev/null || true)"  ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { ptr_Output_s74rg="${retVal}"; return 0; }
+	retVal="${USER}"                         ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "root" ]]; } && { ptr_Output_s74rg="${retVal}"; return 0; }
+	retVal="${USER}"                         ;   [[ -n "${retVal}" ]]                                     && { ptr_Output_s74rg="${retVal}"; return 0; }
+	retVal="$(whoami  2>/dev/null || true)"  ;   [[ -n "${retVal}" ]]                                     && { ptr_Output_s74rg="${retVal}"; return 0; }
 	[[ -z "${retVal}" ]] && fThrowError  "Could not figure out username. This could be a bug [¢Яēᛏ]."  "${FUNCNAME[0]}"
 }
 fGetOgUserHome(){
-	local -n varName_s74rm=$1            ## Arg <REQUIRED>: Variable reference for result.
-	local    userName_s74rm="${2:-}"     ## Arg [optional]: Username. If blank will use fGetOguserName().
+	## Args:
+	local -n ptr_Output_s74rm=${1:-}  ; shift || : ## Arg <REQUIRED>: Variable reference for result.
+	local    userName_s74rm="${2:-}"  ; shift || : ## Arg [optional]: Username. If blank will use fGetOguserName().
+	## Validate
+	[[ -v ptr_Output_s74rm ]] || fThrowError "Calling function must pass a nameref to receive this function's output."
 	local    retVal=""
-	varName_s74rm=""
-	retVal="${HOME}"                                                                                       ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { varName_s74rm="${retVal}"; return 0; }
+	ptr_Output_s74rm=""
+	retVal="${HOME}"                                                                                       ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { ptr_Output_s74rm="${retVal}"; return 0; }
 	[[ -z "${userName_s74rm}" ]] && fGetOgUserName userName_s74rm
-	retVal="$(getent passwd "${userName_s74rm}" | cut -d: -f6)"                                            ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { varName_s74rm="${retVal}"; return 0; }
-	retVal="$(getent passwd "${userName_s74rm:-${SUDO_USER:-${USER}}}" | cut -d: -f6 2>/dev/null || true)" ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { varName_s74rm="${retVal}"; return 0; }
-	retVal="/home/${userName_s74rm}"                                                                       ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { varName_s74rm="${retVal}"; return 0; }
-	retVal="${HOME}"                                                                                       ; { [[ -n "${retVal}" ]] && [[ -d "${retVal}" ]]; }                                   && { varName_s74rm="${retVal}"; return 0; }
+	retVal="$(getent passwd "${userName_s74rm}" | cut -d: -f6)"                                            ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { ptr_Output_s74rm="${retVal}"; return 0; }
+	retVal="$(getent passwd "${userName_s74rm:-${SUDO_USER:-${USER}}}" | cut -d: -f6 2>/dev/null || true)" ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { ptr_Output_s74rm="${retVal}"; return 0; }
+	retVal="/home/${userName_s74rm}"                                                                       ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { ptr_Output_s74rm="${retVal}"; return 0; }
+	retVal="${HOME}"                                                                                       ; { [[ -n "${retVal}" ]] && [[ -d "${retVal}" ]]; }                                   && { ptr_Output_s74rm="${retVal}"; return 0; }
 	[[   -z "${retVal}" ]] && fThrowError  "Could not figure out user's home directory. This could be a bug [¢Яēᛏ]."
 	[[ ! -d "${retVal}" ]] && fThrowError  "Calculated home directory doesn't exist: '${retVal}'. This could be a bug [£⍤ㅍᛦ]."
 }
@@ -119,6 +125,7 @@ fGetOgUserHome(){
 ## Flow control
 fChainToFunc(){
 	[[ -z "${UID}" ]] && { fThrowError "Can't determine user ID via \$UID."; return 2; }
+	## Args
 	local -r chainFuncName="${1}"   #....: Function name to chain to, either directly or by relaunching. Recommended to be "fMain_Chained".
 	## "${2}" could be anything (or nothing) that fMain() and fMain_Chained() agree to; for example could just be script arg 1; or serialized constants, variables, arrays, and/or associative arrays from fMain(), that fMain_Chained() will deserialize. E.g.: "$(declare -p ogUSER  ogHOME)".
 	## "${3}" could be nothing, script arg 2, or say serialized args [e.g. "$(declare -p arg1  arg2)"], or from "$(fArgs_Serialize)". Whatever fMain() and fMain_Chained() agree to.
@@ -176,7 +183,7 @@ _fTrap_Exit(){
 _fTrap_Error(){
 	if [[ "${_wasCleanupRun:-}" == "0" ]]; then  ## String compare is less to fail than integer
 		_wasCleanupRun=1
-		fEcho_ResetBlankCounter
+	#	fEcho_ResetBlankCounter
 		_fSingleExitPoint "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
 	fi ;}
 _fTrap_Error_Ignore(){ _ErrVal=1; true;  return 0; }
@@ -212,16 +219,26 @@ fDefineTrap_Error_Fatal                  ## ERR
 declare -gi _wasLastEchoBlank=0
 declare -gi _isEchoInRawInlineMode=0
 fEcho_ResetBlankCounter()     { _wasLastEchoBlank=0;      }
-fEcho_WasLastEchoBlank_Set()  { { [[ "${1}" == "1" ]] && _wasLastEchoBlank=1; } || _wasLastEchoBlank=0;  }
+fEcho_WasLastEchoBlank_Set()  { { [[ "${1:-}" == "1" ]] && _wasLastEchoBlank=1; } || _wasLastEchoBlank=0;  }
 fEcho_WasLastEchoBlank_Get()  { { ((_wasLastEchoBlank > 0)) && return 0; } || return 1; }
-fEcho_IsInRawInlineMode_Set() { { [[ "${1}" == "1" ]] && _isEchoInRawInlineMode=1; } || { _isEchoInRawInlineMode=0; _wasLastEchoBlank=0; echo; }; }  ## Script it telling fEcho* that something is going to be echoing to the screen in non-linefeed mode without its knowledge. (E.g. "echo -n 'something: '".)
+fEcho_IsInRawInlineMode_Set() { { [[ "${1:-}" == "1" ]] && _isEchoInRawInlineMode=1; } || { _isEchoInRawInlineMode=0; _wasLastEchoBlank=0; echo; }; }  ## Script it telling fEcho* that something is going to be echoing to the screen in non-linefeed mode without its knowledge. (E.g. "echo -n 'something: '".)
 fEcho_IsInRawInlineMode_Get() { { ((_isEchoInRawInlineMode)) && return 0; } || return 1; }
-fEcho_Clean(){
-	((_isEchoInRawInlineMode)) && { echo; _wasLastEchoBlank=0; _isEchoInRawInlineMode=0; }
-	if [[ -n "${1:-}" ]]; then echo -e "$*"; _wasLastEchoBlank=0; elif [[ $_wasLastEchoBlank -eq 0 ]]; then echo; _wasLastEchoBlank=1; fi; }
-fEcho()                   { if [[ -n "$*" ]]; then fEcho_Clean "[ $* ]"; else fEcho_Clean ""; fi; }
-fEcho_Force()             { fEcho_ResetBlankCounter; fEcho "$*";       }
-fEcho_Clean_Force()       { fEcho_ResetBlankCounter; fEcho_Clean "$*"; }
+fEcho_Clean_byref(){
+	local -n ptr_ToEcho_t5jf2=${1:-}
+	[[ -v ptr_ToEcho_t5jf2  ]] || fThrowError "Calling function must pass a nameref to supply the input value to this function."
+	((_isEchoInRawInlineMode)) && fEcho_IsInRawInlineMode_Set 0
+	if [[ -n "${ptr_ToEcho_t5jf2}" ]]; then
+		echo -e "${ptr_ToEcho_t5jf2}"
+		_wasLastEchoBlank=0
+	elif [[ $_wasLastEchoBlank -eq 0 ]]; then
+		echo
+		_wasLastEchoBlank=1
+	fi
+}
+fEcho_Clean()        { local -r toEcho="${1:-}"; fEcho_Clean_byref toEcho; }
+fEcho()              { { [[ -z "${1:-}" ]] && fEcho_Clean ""; } || { local -r toEcho="[ ${1:-} ]"; fEcho_Clean_byref toEcho; }; }
+fEcho_Force()        { _wasLastEchoBlank=0; fEcho "${1:-}"; }
+fEcho_Clean_Force()  { _wasLastEchoBlank=0; local -r toEcho="${1:-}"; fEcho_Clean_byref toEcho; }
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -232,18 +249,22 @@ fEcho_Clean_Force()       { fEcho_ResetBlankCounter; fEcho_Clean "$*"; }
 declare -i isSourced_t5hpa=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5hpa=1
 ((isSourced_t5hpa)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
 
+## Validate this module interface as implemented by consuming script.
+[[ -n "${THIS_FILEPATH:-}"            ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_FILENAME:-}"            ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_DIRPATH:-}"             ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the calling script, for this module to work."
+[[ -n "${DO_CHAIN_SUDO:-}"            ]]  ||  fThrowError "The constant 'DO_CHAIN_SUDO' must be defined by the calling script, for this module to work."
+#declare -f  fLoadModule_v1  &>/dev/null  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+
+## Load dependency modules other than n8mod_code_v1.
+#[[ -v N8MOD_STRING_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_string_v1
+
 ## Flag this module as loaded.
 [[ -v N8MOD_CORE_V1_IS_LOADED ]] || declare -gr N8MOD_CORE_V1_IS_LOADED=1
 
-## Validate this module interface as implemented by consuming script.
-[[ -n "${THIS_FILEPATH:-}" ]] || fThrowError "The constant 'THIS_FILEPATH' must be defined by the calling script, for this module to work."
-[[ -n "${THIS_FILENAME:-}" ]] || fThrowError "The constant 'THIS_FILENAME' must be defined by the calling script, for this module to work."
-[[ -n "${THIS_DIRPATH:-}"  ]] || fThrowError "The constant 'THIS_DIRPATH' must be defined by the calling script, for this module to work."
-[[ -n "${DO_CHAIN_SUDO:-}" ]] || fThrowError "The constant 'DO_CHAIN_SUDO' must be defined by the calling script, for this module to work."
-
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Module Copyright and license:
+##	Module Copyright and license:
 ##		n8mod_core_v1.1.bash from https://github.com/jim-collier/x9bash5-template
 ##		Copyright © 2026 Jim Collier (ID: 1cv◂‡Vᛦ)
 ##		Licenced under GPL v2.0-or-later. No warranty.
@@ -264,5 +285,13 @@ declare -i isSourced_t5hpa=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 ##		along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Module history:
+##	Module history:
 ##		- 20260517 JC: Created.
+
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+##	Notes:
+##		Types of nameref validation
+##			[[ -v ptr_Input_nnnnn  ]] || fThrowError "Calling function must pass a nameref to supply the input value to this function."
+##			[[ -v ptr_Arg1_nnnnn   ]] || fThrowError "Calling function must pass a nameref to supply argument 1 to this function."
+##			[[ -v ptr_Output_nnnnn ]] || fThrowError "Calling function must pass a nameref to receive this function's output."

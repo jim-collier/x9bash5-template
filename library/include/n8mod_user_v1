@@ -18,48 +18,123 @@
 ## shellcheck disable=2004  ## '$/${} is unnecessary on arithmetic variables.' Inappropriate complaining?
 ## shellcheck disable=2053  ## 'Quote the right-hand side of = in [[ ]] to prevent glob matching.' Disable for Yoda Notation.
 
+
 ##	Module copyright: At bottom of script.
 ##	Module history: At bottom of script. (Maintained separately from and/or in addition to, cloud-based version control.)
 
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## For this module
-if [[ -z "${THIS_LIB_FILE_PATH_t5ht9+x}" ]]; then
-	## Constants
-	declare -r THIS_LIB_FILE_PATH_t5ht9="$(realpath -e "${BASH_SOURCE[0]}")"
-	declare -r THIS_LIB_FILE_NAME_t5hte="$(basename "${THIS_LIB_FILE_PATH_t5ht9}")" #...: Replace with native bash function when ready.
-	declare -r THIS_LIB_DIR_PATH_t5hte="$(dirname "${THIS_LIB_FILE_PATH_t5ht9}")" #.....: Replace with native bash function when ready.
+
+## The following are defined here only for linter support.
+## They are required to be defined first by calling script.
+if [[ -z "${doQuietly+x}" ]]; then
+	declare -i doQuietly
+	declare -i doPromptToContinue
+	declare -i ARGS_AT_LEAST_ONE_IS_REQUIRED  || :
+	declare    THIS_VERSION                   || :
+	declare    THIS_BUILD                     || :
+	declare    THIS_COPYRIGHT_YEARS           || :
+	declare    THIS_AUTHOR                    || :
+	declare    LICENSE_SPDX                   || :
+	declare    THIS_FILEPATH                  || :
+	declare    THIS_FILENAME                  || :
+	declare    THIS_DIRPATH                   || :
 fi
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## String functions
-[[ -z "${BUILD_QUOTED_PARAMS_CHECK_PATTERN+x}" ]] && declare -r BUILD_QUOTED_PARAMS_CHECK_PATTERN=$'[][[:space:]|&;()<>`*?$!~{}\'\"#=,%@\\]'  ## If an arg has any of these in it, it needs quoting.
-fBuildQuotedParams(){
-	## Given up to 99 arguments following the parent variable to populate, populates that variable with a string, with the original arguments either as-is, or in quotes if they need it.
-	local -n varName_1mtkp9p=$1 ; shift || true  ## First argument is caller's variable to put results in. Remainging <= 99 variables are to put in quoted string.
-	## Build arg string out of remaining args. Note: ${!i}" refers to function arguments.
-	local -i maxIdx=0
-	for i in {1..99}; do [[ -n "${!i}" ]] && maxIdx=$i; done
-	for i in $(seq 1 $maxIdx); do
-		((i > 1)) && varName_1mtkp9p="${varName_1mtkp9p} "
-		if [[ "${!i}" =~ ${BUILD_QUOTED_PARAMS_CHECK_PATTERN} ]]; then  varName_1mtkp9p="${varName_1mtkp9p}\"${!i}\""  ## Needs quoting
-		else                                                            varName_1mtkp9p="${varName_1mtkp9p}${!i}"      ## Doesn't need quoting
-		fi
-	done
+## For this module
+if [[ -z "${THIS_LIB_FILE_PATH_t5j9j+x}" ]]; then
+	## Constants
+	declare -r  THIS_LIB_FILE_PATH_t5j9j="$(realpath -e "${BASH_SOURCE[0]}")"
+	declare -r  THIS_LIB_FILE_NAME_t5j9j="$(basename "${THIS_LIB_FILE_PATH_t5j9j}")" #...: Replace with native bash function when ready.
+	declare -r  THIS_LIB_DIR_PATH_t5j9j="$(dirname "${THIS_LIB_FILE_PATH_t5j9j}")" #.....: Replace with native bash function when ready.
+	## Variables
+	declare  -i wasShown_Version=0
+	declare  -i wasShown_Copyright=0
+	declare  -i wasShown_About
+	declare  -i wasShown_Syntax
+fi
+
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Show version, copyright, about, syntax
+fShowVersion(){
+	((doQuietly || wasShown_Version)) && return 0
+	fEcho_Clean "${THIS_FILENAME} v${THIS_VERSION} build ${THIS_BUILD}"
+	wasShown_Version=1
+}
+fShowCopyright(){
+	((doQuietly || wasShown_Copyright)) && return 0
+	local copyrightStr=""
+	wasShown_Version=0
+	copyrightStr+="$(fVersion)\n"
+	copyrightStr+="Copyright © ${THIS_COPYRIGHT_YEARS} ${THIS_AUTHOR}.\n"
+	case "${LICENSE_SPDX,,}" in
+		"GPL-2.0-or-later")
+			copyrightStr+="Licensed under the GNU General Public License v2.0 or later. Full text at:\n"
+			copyrightStr+="  https://spdx.org/licenses/GPL-2.0-or-later.html\n"
+		;;
+		*) fThrowError "Sorry, I haven't been programmed yet to display license '${LICENSE_SPDX}'." ;;
+	esac
+	copyrightStr+="No warranty."
+	fEcho_Clean; fEcho_Clean "${copyrightStr}"; fEcho_Clean
+	wasShown_Copyright=1
+}
+fShowAbout(){
+	((doQuietly || wasShown_About)) && return 0
+	## Arg
+	local -n varName_AboutText_t5j9j=$1
+	[[ -v varName_AboutText_t5j9j && -n "${varName_AboutText_t5j9j:-}" ]] || fThrowError "The one argument to this function must be a variable containing 'about' text."
+	fEcho_Clean; fEcho_Clean "${varName_AboutText_t5j9j}"; fEcho_Clean
+	wasShown_About=1
+}
+fShowSyntax(){
+	((doQuietly || wasShown_Syntax)) && return 0
+	## Arg
+	local -n varName_SyntaxText_t5j9j=$1
+	[[ -v varName_SyntaxText_t5j9j && -n "${varName_SyntaxText_t5j9j:-}" ]] || fThrowError "The one argument to this function must be a variable containing 'syntax' text."
+	fEcho_Clean; fEcho_Clean "${varName_SyntaxText_t5j9j}"; fEcho_Clean
+	wasShown_Syntax=1
 }
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## User-prompt-related
+fIntroPromptToContinue(){
+	((doQuietly || ! doPromptToContinue)) && return 0
+	local -r extraInfoString="${1:-}"
+	{ fEcho_Clean; fCopyright; fAbout; fEcho_Clean; }
+	[[ -n "${extraInfoString}" ]] && { fEcho_Clean; fEcho_Clean "${extraInfoString}"; }
+	fPromptYN "Continue? (y|n): " || { fEcho "User aborted."; return 1; }
+}
+fPromptYN(){
+	((doQuietly)) && return 0
+	local promptStr="${1:-}"
+	[[ -z "${promptStr}" ]] && promptStr="Continue? (y|n): "
+	read -r -p "${promptStr}" userAnswer
+	fEcho_ResetBlankCounter
+	{ [[ "${userAnswer,,}" == "y" ]] && return 0; } || return 1
+}
+fPressAnyKeyToContinue(){
+	((doQuietly)) && return 0
+	local promptStr="${1:-}"
+	[[ -z "${promptStr}" ]] && promptStr="Press any key to continue ..."
+	read -n 1 -s -p "${promptStr}" userAnswer
+	fEcho_Clean_Force
+}
+
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+##
 ## Script initialization
 
 ## Check if sourced
-declare -i isSourced_t5hte=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5hte=1
-((isSourced_t5hte)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
+declare -i isSourced_t5ja2=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5ja2=1
+((isSourced_t5ja2)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
 
 ## Validate the assumption that required n8mod_core_v1 dependency is already loaded
 [[ "${N8MOD_CORE_V1_IS_LOADED}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
 
 ## Flag this module as loaded.
-[[ -n "${N8MOD_STRING_V1_IS_LOADED+x}" ]] || declare -r N8MOD_STRING_V1_IS_LOADED=1
+[[ -n "${N8MOD_USER_V1_IS_LOADED+x}" ]] || declare -r N8MOD_USER_V1_IS_LOADED=1
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••

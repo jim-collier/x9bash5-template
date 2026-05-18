@@ -25,19 +25,11 @@
 
 ## The following are defined here only for linter support.
 ## They are required to be defined first by calling script.
-if [[ -z "${doQuietly+x}" ]]; then
-	declare -i doQuietly
-	declare -i doPromptToContinue
-	declare -i ARGS_AT_LEAST_ONE_IS_REQUIRED
-	declare    THIS_VERSION
-	declare    THIS_BUILD
-	declare    THIS_COPYRIGHT_YEARS
-	declare    THIS_AUTHOR
-	declare    LICENSE_SPDX
-	declare    THIS_FILEPATH
-	declare    THIS_FILENAME
-	declare    THIS_DIRPATH
-	declare    DO_CHAIN_SUDO
+if [[ -z "${THIS_FILEPATH+x}" ]]; then
+	declare    THIS_FILEPATH  || :
+	declare    THIS_FILENAME  || :
+	declare    THIS_DIRPATH   || :
+	declare    DO_CHAIN_SUDO  || :
 fi
 
 ## 	The calling script also should set these environment settings as follows:
@@ -59,9 +51,6 @@ if [[ -z "${THIS_LIB_FILE_PATH_t5hpa+x}" ]]; then
 	declare -r THIS_LIB_DIR_PATH_t5hpa="$(dirname "${THIS_LIB_FILE_PATH_t5hpa}")" #.....: Replace with native bash function when ready.
 	declare -r SERIAL_DATETIME="$(date "+%Y%m%d-%H%M%S")"
 	declare -r RELAUNCH_SENTINELVAL="${THIS_LIB_FILE_NAME_t5hpa}_relaunch_4KQDYluNbzLQHwMwsWxgdk"  ## This funky string isn't for 'security' or uniqueness. It just a sentinel value that's unlikely as a user argument.
-	## Variables
-	wasShown_Version=0
-	wasShown_Copyright=0
 fi
 
 
@@ -75,15 +64,15 @@ fInit(){
 		## In this form, args:
 		##	Arg1: Literally "${RELAUNCH_SENTINELVAL}"
 		##	Arg2: Function name in calling parent script to launch with remaining arguments.
-		[[ -n "${2:-}" ]]                     ||  { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: A valid 'relaunch' sentinel value was passed as arg1, but no function name to branch to was passed as arg2.\n" ; return 1; }
-		declare -f "${2:-}" > /dev/null 2>&1  ||  { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: The function name passed as arg2 isn't defined in this environment: '${2:-}'.\n"                               ; return 1; }
+		[[ -n "${2:-}" ]]                    || { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: A valid 'relaunch' sentinel value was passed as arg1, but no function name to branch to was passed as arg2.\n" ; return 1; }
+		declare -f "${2:-}" > /dev/null 2>&1 || { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: The function name passed as arg2 isn't defined in this environment: '${2:-}'.\n"                               ; return 1; }
 		${2:-} "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}" "${33:-}" "${34:-}"
 
 	else
 
 		## The first and possibly/usually only entry point. Args are whatever the script needs.
 		## fMain() must exist in calling parent script.
-		declare -f "fMain" > /dev/null 2>&1  ||  { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: The function fMain() isn't defined in this environment: '${2:-}'.\n" ; return 1; }
+		declare -f "fMain" > /dev/null 2>&1 || { echo -e "\nError in ${THIS_LIB_FILE_NAME_t5hpa}: The function fMain() isn't defined in this environment: '${2:-}'.\n" ; return 1; }
 		fMain  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
 
 	fi
@@ -93,73 +82,6 @@ fInit(){
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ##
 ## Core functions
-
-##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Show version, copyright, about, syntax
-user::fShowVersion(){
-	((doQuietly || wasShown_Version)) && return 0
-	fEcho_Clean "${THIS_FILENAME} v${THIS_VERSION} build ${THIS_BUILD}"
-	wasShown_Version=1
-}
-user::fShowCopyright(){
-	((doQuietly || wasShown_Copyright)) && return 0
-	local copyrightStr=""
-	wasShown_Version=0
-	copyrightStr+="$(fVersion)\n"
-	copyrightStr+="Copyright © ${THIS_COPYRIGHT_YEARS} ${THIS_AUTHOR}.\n"
-	case "${LICENSE_SPDX,,}" in
-		"GPL-2.0-or-later")
-			copyrightStr+="Licensed under the GNU General Public License v2.0 or later. Full text at:\n"
-			copyrightStr+="  https://spdx.org/licenses/GPL-2.0-or-later.html\n"
-		;;
-		*) fThrowError "Sorry, I haven't been programmed yet to display license '${LICENSE_SPDX}'." ;;
-	esac
-	copyrightStr+="No warranty."
-	fEcho_Clean; fEcho_Clean "${copyrightStr}"; fEcho_Clean
-	wasShown_Copyright=1
-}
-user::fShowAbout(){
-	((doQuietly || wasShown_About)) && return 0
-	## Arg
-	local -n varName_AboutText_t5hpa=$1
-	[[ -v varName_AboutText_t5hpa && -n "${varName_AboutText_t5hpa:-}" ]]  ||  fThrowError "The one argument to this function must be a variable containing 'about' text."
-	fEcho_Clean; fEcho_Clean "${varName_AboutText_t5hpa}"; fEcho_Clean
-	wasShown_About=1
-}
-user::fShowSyntax(){
-	((doQuietly || wasShown_Syntax)) && return 0
-	## Arg
-	local -n varName_SyntaxText_t5hpa=$1
-	[[ -v varName_SyntaxText_t5hpa  &&  -n "${varName_SyntaxText_t5hpa:-}" ]]  ||  fThrowError "The one argument to this function must be a variable containing 'syntax' text."
-	fEcho_Clean; fEcho_Clean "${varName_SyntaxText_t5hpa}"; fEcho_Clean
-	wasShown_Syntax=1
-}
-
-
-##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## User-prompt-related
-fIntroPromptToContinue(){
-	{ ((doQuietly)) || ((! doPromptToContinue)); } && return 0
-	local -r extraInfoString="${1:-}"
-	{ fEcho_Clean; fCopyright; fAbout; fEcho_Clean; }
-	[[ -n "${extraInfoString}" ]]  &&  { fEcho_Clean; fEcho_Clean "${extraInfoString}"; }
-	fPromptYN "Continue? (y|n): "  ||  { fEcho "User aborted."; return 1; }
-}
-fPromptYN(){
-	((doQuietly)) && return 0
-	local promptStr="${1:-}"
-	[[ -z "${promptStr}" ]] && promptStr="Continue? (y|n): "
-	read -r -p "${promptStr}" userAnswer
-	fEcho_ResetBlankCounter
-	{ [[ "${userAnswer,,}" == "y" ]] && return 0; } || return 1
-}
-fPressAnyKeyToContinue(){
-	((doQuietly)) && return 0
-	local promptStr="${1:-}"
-	[[ -z "${promptStr}" ]] && promptStr="Press any key to continue ..."
-	read -n 1 -s -p "${promptStr}" userAnswer
-	fEcho_Clean_Force
-}
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## Username and home
@@ -182,20 +104,19 @@ fGetOgUserHome(){
 	local    retVal=""
 	varName_s74rm=""
 	retVal="${HOME}"                                                                                       ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { varName_s74rm="${retVal}"; return 0; }
-	[[ -z "${userName_s74rm}" ]]  &&  fGetOgUserName userName_s74rm
+	[[ -z "${userName_s74rm}" ]] && fGetOgUserName userName_s74rm
 	retVal="$(eval echo "~${userName_s74rm}")"                                                             ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { varName_s74rm="${retVal}"; return 0; }
 	retVal="$(getent passwd "${userName_s74rm:-${SUDO_USER:-${USER}}}" | cut -d: -f6 2>/dev/null || true)" ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { varName_s74rm="${retVal}"; return 0; }
 	retVal="/home/${userName_s74rm}"                                                                       ; { [[ -n "${retVal}" ]] && [[ "${retVal,,}" != "/root" ]] && [[ -d "${retVal}" ]]; } && { varName_s74rm="${retVal}"; return 0; }
 	retVal="${HOME}"                                                                                       ; { [[ -n "${retVal}" ]] && [[ -d "${retVal}" ]]; }                                   && { varName_s74rm="${retVal}"; return 0; }
-	[[   -z "${retVal}" ]]  &&  fThrowError  "Could not figure out user's home directory. This could be a bug [¢Яēᛏ]."
-	[[ ! -d "${retVal}" ]]  &&  fThrowError  "Calculated home directory doesn't exist: '${retVal}'. This could be a bug [£⍤ㅍᛦ]."
+	[[   -z "${retVal}" ]] && fThrowError  "Could not figure out user's home directory. This could be a bug [¢Яēᛏ]."
+	[[ ! -d "${retVal}" ]] && fThrowError  "Calculated home directory doesn't exist: '${retVal}'. This could be a bug [£⍤ㅍᛦ]."
 }
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Misc
-
+## Flow control
 fChainToFunc(){
-	[[ -z "${UID}" ]]  &&  { fThrowError "Can't determine user ID via \$UID."; return 2; }
+	[[ -z "${UID}" ]] && { fThrowError "Can't determine user ID via \$UID."; return 2; }
 	local -r chainFuncName="${1}"   #....: Function name to chain to, either directly or by relaunching. Recommended to be "fMain_Chained".
 	## "${2}" could be anything (or nothing) that fMain() and fMain_Chained() agree to; for example could just be script arg 1; or serialized constants, variables, arrays, and/or associative arrays from fMain(), that fMain_Chained() will deserialize. E.g.: "$(declare -p ogUSER  ogHOME)".
 	## "${3}" could be nothing, script arg 2, or say serialized args [e.g. "$(declare -p arg1  arg2)"], or from "$(fArgs_Serialize)". Whatever fMain() and fMain_Chained() agree to.
@@ -215,9 +136,8 @@ fChainToFunc(){
 	fi
 }
 
-
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Error-handling
+## Error-handling (minified but not obfuscated)
 declare -i _wasCleanupRun=0  ## Managed internally by this suite.
 declare -i _doExitOnThrow=0    ## Managed internally by this suite.
 declare -i _ErrVal=0         ## Set by this suite, but managed by calling functions. Think of it as an extended '$?' that doesn't immediately clear.
@@ -277,25 +197,25 @@ fDefineTrap_Error_Fatal(){        :; _ErrVal=0; _doExitOnThrow=0; trap '_fTrap_E
 fDefineTrap_Error_ExitOnThrow(){  :; _ErrVal=0; _doExitOnThrow=0; trap '_fTrap_Error         ERR    ${LINENO}  $?  $_' ERR; set +e; } ## Only exits script on fThrowError().
 fDefineTrap_Error_Soft(){         :; _ErrVal=0; _doExitOnThrow=0; trap '_fTrap_Error_Soft    ERR    ${LINENO}  $?  $_' ERR; set -e; } ## Returns error code of 1 on error.
 fDefineTrap_Error_Ignore(){       :; _ErrVal=0; _doExitOnThrow=0; trap '_fTrap_Error_Ignore  ERR    ${LINENO}  $?  $_' ERR; set +e; } ## Eats errors and returns true.
-fDefineTrap_Error_Fatal
 trap '_fTrap_Error SIGHUP  ${LINENO} $? $_' SIGHUP
 trap '_fTrap_Error SIGINT  ${LINENO} $? $_' SIGINT    ## CTRL+C
 trap '_fTrap_Error SIGTERM ${LINENO} $? $_' SIGTERM
 trap '_fTrap_Exit  EXIT    ${LINENO} $? $_' EXIT
 trap '_fTrap_Exit  INT     ${LINENO} $? $_' INT
 trap '_fTrap_Exit  TERM    ${LINENO} $? $_' TERM
+fDefineTrap_Error_Fatal                  ## ERR
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Echo-related
+## Echo-related (minified but not obfuscated)
 declare -i _wasLastEchoBlank=0
 declare -i _isEchoInRawInlineMode=0
 fEcho_ResetBlankCounter()     { _wasLastEchoBlank=0;      }
-fEcho_WasLastEchoBlank_Set()  { { [[ "${1}" == "1" ]]  &&  _wasLastEchoBlank=1; }  ||  _wasLastEchoBlank=0;  }
-fEcho_WasLastEchoBlank_Get()  { { ((_wasLastEchoBlank > 0))  &&  return 0; }  ||  return 1; }
-fEcho_IsInRawInlineMode_Set() { { [[ "${1}" == "1" ]]  &&  _isEchoInRawInlineMode=1; }  ||  { _isEchoInRawInlineMode=0; _wasLastEchoBlank=0; echo; }; }  ## Script it telling fEcho* that something is going to be echoing to the screen in non-linefeed mode without its knowledge. (E.g. "echo -n 'something: '".)
-fEcho_IsInRawInlineMode_Get() { { ((_isEchoInRawInlineMode))  &&  return 0; }  ||  return 1; }
+fEcho_WasLastEchoBlank_Set()  { { [[ "${1}" == "1" ]] && _wasLastEchoBlank=1; } || _wasLastEchoBlank=0;  }
+fEcho_WasLastEchoBlank_Get()  { { ((_wasLastEchoBlank > 0)) && return 0; } || return 1; }
+fEcho_IsInRawInlineMode_Set() { { [[ "${1}" == "1" ]] && _isEchoInRawInlineMode=1; } || { _isEchoInRawInlineMode=0; _wasLastEchoBlank=0; echo; }; }  ## Script it telling fEcho* that something is going to be echoing to the screen in non-linefeed mode without its knowledge. (E.g. "echo -n 'something: '".)
+fEcho_IsInRawInlineMode_Get() { { ((_isEchoInRawInlineMode)) && return 0; } || return 1; }
 fEcho_Clean(){
-	((_isEchoInRawInlineMode))  &&  { echo; _wasLastEchoBlank=0; _isEchoInRawInlineMode=0; }
+	((_isEchoInRawInlineMode)) && { echo; _wasLastEchoBlank=0; _isEchoInRawInlineMode=0; }
 	if [[ -n "${1:-}" ]]; then echo -e "$*"; _wasLastEchoBlank=0; elif [[ $_wasLastEchoBlank -eq 0 ]]; then echo; _wasLastEchoBlank=1; fi; }
 fEcho()                   { if [[ -n "$*" ]]; then fEcho_Clean "[ $* ]"; else fEcho_Clean ""; fi; }
 fEcho_Force()             { fEcho_ResetBlankCounter; fEcho "$*";       }
@@ -307,15 +227,11 @@ fEcho_Clean_Force()       { fEcho_ResetBlankCounter; fEcho_Clean "$*"; }
 ## Script initialization
 
 ## Check if sourced
-declare -i isSourced_t5hpa; { (return 0 2>/dev/null) && isSourced_t5hpa=1; } || isSourced_t5hpa=0
-((! isSourced_t5hpa)) && { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
+declare -i isSourced_t5hpa=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5hpa=1
+((isSourced_t5hpa)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
 
-## Flag as loaded.
-if [[ -z "${N8MOD_CORE_V1_IS_LOADED+x}" ]]; then
-	declare -r N8MOD_CORE_V1_IS_LOADED=1
-fi
-
-
+## Flag this module as loaded.
+[[ -z "${N8MOD_CORE_V1_IS_LOADED+x}" ]] || declare -r N8MOD_CORE_V1_IS_LOADED=1
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••

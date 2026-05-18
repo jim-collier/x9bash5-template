@@ -18,7 +18,7 @@
 ## shellcheck disable=2004  ## '$/${} is unnecessary on arithmetic variables.' Inappropriate complaining?
 ## shellcheck disable=2053  ## 'Quote the right-hand side of = in [[ ]] to prevent glob matching.' Disable for Yoda Notation.
 
-##	Purpose: See fAbout() below.
+##	Purpose: See fShowAbout_Local() below.
 ##	Template copyright: At bottom of script.
 ##	History: At bottom of script. (Maintained separately from and/or in addition to, cloud-based version control.)
 
@@ -28,44 +28,50 @@
 
 if [[ -z "${doQuietly+x}" ]]; then
 
-	## Settings; required by n8mod_core_v1.1.bash
+	## Required by this template
+	declare -ri ARGS_AT_LEAST_ONE_IS_REQUIRED=0
+	declare -ri ARGS_MAX_POSITIONAL_COUNT=0
+
+	## Required by n8mod_core_v1
+	declare -r  THIS_FILEPATH="$(realpath -e "${0}")"
+	declare -r  THIS_FILENAME="$(basename "${THIS_FILEPATH}")"
+	declare -r  THIS_DIRPATH="$(dirname "${THIS_FILEPATH}")"
+	declare -ri DO_CHAIN_SUDO=1  ## Don't have to use
+	## Populated by n8mod_core_v1
+	declare     SERIAL_DATETIME
+	declare     RELAUNCH_SENTINELVAL
+
+	## Required by n8mod_user_v1
 	declare  -i doQuietly=0
 	declare  -i doPromptToContinue=0
-	declare -RI DO_CHAIN_SUDO=0
-	declare -ri ARGS_AT_LEAST_ONE_IS_REQUIRED=0
 	declare -r  THIS_VERSION="1.0.0-beta1"
-	declare -r  THIS_BUILD="1n0mp0m"
+	declare -r  THIS_BUILD="1n0pagv"
 	declare -r  THIS_COPYRIGHT_YEARS="2011-2026"
 	declare -r  THIS_AUTHOR="Jim Collier"
 	declare -r  LICENSE_SPDX="GPL-2.0-or-later"   ## Valid so far: GPL-2.0-or-later
-
-	## Misc constants; required by n8mod_core_v1.1.bash
-	declare -r THIS_FILEPATH="$(realpath -e "${0}")"
-	declare -r THIS_FILENAME="$(basename "${THIS_FILEPATH}")"
-	declare -r THIS_DIRPATH="$(dirname "${THIS_FILEPATH}")"
 
 fi
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-fAbout(){ local aboutStr=""
+fShowAbout_Local(){ local aboutStr=""
 	#         X-------------------------------------------------------------------------------X
 	aboutStr+="A thing that does some stuff, like:\n"
 	aboutStr+="  • This.\n"
 	aboutStr+="  • And that.\n"
 	#         X-------------------------------------------------------------------------------X
-	user::fShowAbout aboutStr
+	fShowAbout aboutStr
 }
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-fSyntax(){ local syntaxStr=""
+fSyntax_Local(){ local syntaxStr=""
 	#          X-------------------------------------------------------------------------------X
 	syntaxStr+="Arguments:\n"
 	syntaxStr+="  --quiet\n"
 	syntaxStr+="      [optional]: Be less verbose, and don't prompt user to continue.\n"
 	syntaxStr+="  --help, --about, --version [or -h, -a, -v]"
 	#          X-------------------------------------------------------------------------------X
-	user::fShowSyntax aboutStr
+	fShowSyntax aboutStr
 }
 
 
@@ -78,18 +84,29 @@ fMain(){ :;
 }
 
 
-#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-fParseArgs(){
-	## This needs to be made generic. Until then, we have this ugly thing.
+#••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+fMain_Chained(){
+	[[ -n "${1:-}" ]] && eval "${1:-}"  ## Restore caller's serialized variables [or fArgs_*]. New scope is local to this function.
+	((! doQuietly)) && fEcho_Clean
 
+	## Revalidate
+	[[   -z "${doQuietly}" ]]                && { fThrowError "Arg not set: doQuietly" ; return 1; }
+	[[   -z "${ogUSER}" ]]                   && { fThrowError "Arg not set: ogUSER" ; return 1; }
+	[[   -z "${ogHOME}" ]]                   && { fThrowError "Arg not set: ogHOME" ; return 1; }
+
+}
+
+#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## This needs to be made generic. Until then, we have this per-script.
+fParseArgs(){
 	## Look for stars "✶✶✶✶✶✶✶✶" for places to custom-modify unique instances of this function.
 
 	## Check for need to show help etc.
-	{ ((atLeastOneArgRequired)) && [[ -z "${1:-}${2:-}${3:-}${4:-}" ]]; } && { fCopyright; fAbout; fSyntax; return 1; }
+	{ ((ARGS_AT_LEAST_ONE_IS_REQUIRED)) && [[ -z "${1:-}${2:-}${3:-}${4:-}" ]]; } && { fCopyright; fShowAbout_Local; fSyntax_Local; return 1; }
 	case " ${*,,} " in
-		*" -h "*|*" --help "*|*" -help "*)                               fCopyright ; fAbout ; fSyntax ; exit 0 ;;
-		*" -a "*|*" --about "*|*" -about "*)                             fCopyright ; fAbout           ; exit 0 ;;
-		*" -v "*|*" --version "*|*" -version "*|*" --ver "|*" -ver "**)  fVersion ; doQuietly=1        ; exit 0 ;;
+		*" -h "*|*" --help "*|*" -help "*)                               fCopyright; fShowAbout_Local; fSyntax_Local  ; exit 0 ;;
+		*" -a "*|*" --about "*|*" -about "*)                             fCopyright; fShowAbout_Local                 ; exit 0 ;;
+		*" -v "*|*" --version "*|*" -version "*|*" --ver "|*" -ver "**)  fVersion; doQuietly=1                        ; exit 0 ;;
 	esac
 
 	## GENERIC (don't modify): Populate args array and string.
@@ -167,17 +184,17 @@ fParseArgs(){
 			else
 				## Well it must be a positional arg then.
 				positionalArgCounter=$((positionalArgCounter + 1))
-				((positionalArgCounter > parseArgs_maxPositionalArgCount))  && fThrowError "Too many positional arguments: ${positionalArgCounter}, for max of ${parseArgs_maxPositionalArgCount}."
+				((positionalArgCounter > ARGS_MAX_POSITIONAL_COUNT))  && fThrowError "Too many positional arguments: ${positionalArgCounter}, for max of ${ARGS_MAX_POSITIONAL_COUNT}."
 				#fEcho_Clean "Debug: positional arg #${positionalArgCounter}: '${currentArg}'"
 
 				## ✶✶✶✶✶✶✶✶ PUT CUSTOM POSITIONAL ARG LOGIC HERE (only use one of the following methods, delete the other)
 
 				## Assign parent variables; Method 1: argument counter (less flexible but best for simple input)
-				case $positionalArgCounter in
-					1) stringArg="${currentArg}"      ;;
-					2) arg_intArg="${currentArg}" ;;
-					*) fThrowError "Unexpected positional argument # ${positionalArgCounter}: '${currentArg}'." ;;
-				esac
+			#	case $positionalArgCounter in
+			#		1) stringArg="${currentArg}"      ;;
+			#		2) arg_intArg="${currentArg}"     ;;
+			#		*) fThrowError "Unexpected positional argument # ${positionalArgCounter}: '${currentArg}'." ;;
+			#	esac
 
 			fi
 		fi
@@ -210,7 +227,7 @@ fCleanup(){
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Generic template stuff
+## Generic boilerplate in every script
 
 fLoadModule_v1(){
 	## Purpose: Loads a module by name.
@@ -218,7 +235,7 @@ fLoadModule_v1(){
 	local -r arg_ModuleName="${1:-}"  # ; shift || :  ## Module name
 	local resolvedPath=""
 	fResolvePath_v1  resolvedPath  arg_ModuleName
-	[[ -f "${resolvedPath}" ]]  &&  source "${resolvedPath}"
+	[[ -f "${resolvedPath}" ]] && source "${resolvedPath}"
 :;}
 fResolvePath_v1(){
 	## Purpose: Resolves an argument to a canonical full path, while being careful to not be too broad as to resolve to something else with the same name.
@@ -229,37 +246,36 @@ fResolvePath_v1(){
 	local -n ref_Arg_NameOrPath_t4rej=${1:-}       ; shift || :  ## File or folder path (relative or absolute). If an executable file, can be just a name to search in $PATH, to fully resolve.
 	local -i mustExist=${1:-1}                     ; shift || :  ## 1 [default]: path must exist or error occurs. 0: Just rationalize paths, doesn't have to exist.
 	## Validate
-	[[ -v ref_Return_ResolvedPath_t4rej ]]                                     ||  { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): The first argument to this function must be a return variable reference.\n"                           ; return 1; }
-	[[ -v ref_Arg_NameOrPath_t4rej  &&  -n "${ref_Arg_NameOrPath_t4rej:-}" ]]  ||  { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): The second argument to this function must be a variable reference with a file path or executable name.\n" ; return 1; }
+	[[ -v ref_Return_ResolvedPath_t4rej ]]                                    || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): The first argument to this function must be a return variable reference.\n"                           ; return 1; }
+	[[ -v ref_Arg_NameOrPath_t4rej && -n "${ref_Arg_NameOrPath_t4rej:-}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): The second argument to this function must be a variable reference with a file path or executable name.\n" ; return 1; }
 	## Init
 	ref_Return_ResolvedPath_t4rej=""
 	## Obvious test, as-is
-	[[ -e "${ref_Arg_NameOrPath_t4rej}" ]]  &&  { ref_Return_ResolvedPath_t4rej="$(realpath -e "${ref_Arg_NameOrPath_t4rej}")"; return 0; }
+	[[ -e "${ref_Arg_NameOrPath_t4rej}" ]] && { ref_Return_ResolvedPath_t4rej="$(realpath -e "${ref_Arg_NameOrPath_t4rej}")"; return 0; }
 	## Test file with common sub-paths
 	local -r mePath_t4rej="$(dirname "${BASH_SOURCE[0]}")"  ## Pathspec to this script.
 	local -a tryRelSubs=('/'  '/lib/'  '/include/'  '/includes/') ; local -a tryRelPaths=()  ## Common generic library subdirs.
 	for nextSub in "${tryRelSubs[@]}"; do tryRelPaths+=("${BASH_SOURCE[0]}.d${nextSub}${ref_Arg_NameOrPath_t4rej}") ; done  ## "[this script's full pathspec].d/[each common subdir]/[argument]".
 	for nextSub in "${tryRelSubs[@]}"; do tryRelPaths+=("${mePath_t4rej}${nextSub}${ref_Arg_NameOrPath_t4rej}")     ; done  ## "[this script's folder]/[each common subdir]/[argument]".
-	for nextPath in "${tryRelPaths[@]}"; do [[ -e "${nextPath}" ]]  &&  { ref_Return_ResolvedPath_t4rej="$(realpath -e "${nextPath}")"; return 0; }; done  ## Return realpath if found in the first match.
+	for nextPath in "${tryRelPaths[@]}"; do [[ -e "${nextPath}" ]] && { ref_Return_ResolvedPath_t4rej="$(realpath -e "${nextPath}")"; return 0; }; done  ## Return realpath if found in the first match.
 	local testPath=""
 	## Try 'which', if arg is a single file.
 	if [[ "${ref_Arg_NameOrPath_t4rej}" != */* ]]; then
 		testPath="$(which "${ref_Arg_NameOrPath_t4rej}" 2>/dev/null || true)"
-		[[ -n "${testPath}" ]]  &&  { ref_Return_ResolvedPath_t4rej="$(realpath -e "${testPath}")"; return 0; }  ## Return 'which'
+		[[ -n "${testPath}" ]] && { ref_Return_ResolvedPath_t4rej="$(realpath -e "${testPath}")"; return 0; }  ## Return 'which'
 	fi
 	## Haven't matched yet: revert to original argument
 	testPath="${ref_Arg_NameOrPath_t4rej}"
 	if ((mustExist)); then
 		testPath="$(realpath -e "${testPath}" 2>/dev/null || true)"
-		[[ -n "${testPath}"  &&  -e "${testPath}" ]]  ||  { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Could not resolve path '${ref_Arg_NameOrPath_t4rej}' [£ǝŔs].\n"; return 1; }
+		[[ -n "${testPath}" && -e "${testPath}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Could not resolve path '${ref_Arg_NameOrPath_t4rej}' [£ǝŔs].\n"; return 1; }
 	else
 		testPath="$(realpath -m "${testPath}" 2>/dev/null || true)"
-		[[ -n "${testPath}" ]]  ||  { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Could not resolve even optionally nonexistent path '${ref_Arg_NameOrPath_t4rej}' [£ǝŔs].\n"; return 1; }
+		[[ -n "${testPath}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Could not resolve even optionally nonexistent path '${ref_Arg_NameOrPath_t4rej}' [£ǝŔs].\n"; return 1; }
 	fi
 	## Success
 	ref_Return_ResolvedPath_t4rej="${testPath}"
 }
-
 
 ## Bash environment settings
  set -u  #..................: Require variable declaration. Stronger than mere linting.
@@ -271,14 +287,14 @@ fResolvePath_v1(){
  shopt -s globstar  #.......: ** matches more stuff including recursion.
 
 ## Check if sourced
-declare -i isSourced_t5hnd; { (return 0 2>/dev/null) && isSourced_t5hnd=1; } || isSourced_t5hnd=0
-#((! isSourced_t5hnd)) && { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
-((isSourced_t5hnd)) && { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is not meant to be 'sourced' from within another script.\n"; exit 1; }
+declare -i isSourced_t5ja1=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5ja1=1
+#((isSourced_t5ja1)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
+((isSourced_t5ja1)) && { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is not meant to be 'sourced' from within another script.\n"; exit 1; }
 
 ## Load modules
 	fLoadModule_v1  'n8mod_core_v1'
 	fLoadModule_v1  'n8mod_string_v1'
-#	fLoadModule_v1  'n8mod_user_v1'
+	fLoadModule_v1  'n8mod_interact_v1'
 #	fLoadModule_v1  'n8mod_oop_v1'
 #	fLoadModule_v1  'n8mod_number_v1'
 #	fLoadModule_v1  'n8mod_array_v1'

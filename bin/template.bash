@@ -79,13 +79,39 @@ fSyntax_Local(){ local syntaxStr=""
 ## Invoked by n8mod_core, after this script invokes fInit().
 fMain(){ :;
 
-	echo SOMETHING
+	## Settings
+	local ogUSER="" ; fGetOgUserName ogUSER             ; readonly ogUSER  ## Not required by anything in template.
+	local ogHOME="" ; fGetOgUserHome ogHOME "${ogUSER}" ; readonly ogHOME  ## Not required by anything in template.
 
+	## Pre-arg validation
+
+	## Arguments
+	local -a allArgsArr=()
+	fParseArgs  "${1:-}" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" "${7:-}" "${8:-}" "${9:-}" "${10:-}" "${11:-}" "${12:-}" "${13:-}" "${14:-}" "${15:-}" "${16:-}" "${17:-}" "${18:-}" "${19:-}" "${20:-}" "${21:-}" "${22:-}" "${23:-}" "${24:-}" "${25:-}" "${26:-}" "${27:-}" "${28:-}" "${29:-}" "${30:-}" "${31:-}" "${32:-}"
+	readonly allArgsArr
+
+	## Post-arg validation
+
+	## Prompt to continue
+	if ((! doQuietly)); then
+		fCopyright
+		fAbout
+		fEcho_Clean "Some info ...............: ${USER}"
+		fEcho_Clean "More info ...............: ${HOME}"
+		fIntroPromptToContinue  ""
+		fEcho_Clean
+	fi
+
+	## Done; either fChainToFunc() -> fMain_Chained() returned, or this script run in a sudo subshell [running only fMain_Chained()] returned.
+	((! doQuietly)) && { fEcho; fEcho "Done."; fEcho; }
 }
 
 
 #••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 fMain_Chained(){
+	## Only needed this function, if $DO_CHAIN_SUDO==1, and you intend to invoke `fChainToFunc 'fMain_Chained'` in fMain().
+	## Example invocation:
+	##	fChainToFunc  'fMain_Chained'  "$(declare -p  doQuietly  ogUSER  ogHOME)"
 	[[ -n "${1:-}" ]] && eval "${1:-}"  ## Restore caller's serialized variables [or fArgs_*]. New scope is local to this function.
 	((! doQuietly)) && fEcho_Clean
 

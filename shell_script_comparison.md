@@ -14,7 +14,7 @@
 - [Requirements to replace Bash for certain projects](#requirements-to-replace-bash-for-certain-projects)
 - [Not Requirements](#not-requirements)
 - [The contenders](#the-contenders)
-	- [Ksh*, Zsh, Yash, Fish, etc.](#ksh-zsh-yash-fish-etc)
+	- [Ksh*, Zsh, Yash, Fish, etc](#ksh-zsh-yash-fish-etc)
 	- [Nushell, YSH](#nushell-ysh)
 	- [Powershell Core](#powershell-core)
 	- [Node.jnodeJS via Deno or zx](#nodejnodejs-via-deno-or-zx)
@@ -64,7 +64,7 @@ So can we do better than Bash or PowerShell? The requirements:
 
 ## The contenders
 
-### Ksh*, Zsh, Yash, Fish, etc.
+### Ksh*, Zsh, Yash, Fish, etc
 
 - Pros:
 	- Ksh and Zsh are readily available on most distros.

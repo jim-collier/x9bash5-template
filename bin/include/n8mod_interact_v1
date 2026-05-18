@@ -22,10 +22,12 @@
 ##	Module copyright: At bottom of script.
 ##	Module history: At bottom of script. (Maintained separately from and/or in addition to, cloud-based version control.)
 
+## Bail if already loaded
+[[ "${N8MOD_INTERACT_V1_IS_LOADED:-}" == "1" ]] && return
 
 ## The following are defined here only for linter support.
-## They are required to be defined first by calling script.
-if [[ -z "${doQuietly+x}" ]]; then
+## They are required to be defined first by the calling script, so should never get inside the if/fi.
+if [[ ! -v doQuietly ]]; then
 	declare -i doQuietly
 	declare -i doPromptToContinue
 	declare -i ARGS_AT_LEAST_ONE_IS_REQUIRED  || :
@@ -34,23 +36,20 @@ if [[ -z "${doQuietly+x}" ]]; then
 	declare    THIS_COPYRIGHT_YEARS           || :
 	declare    THIS_AUTHOR                    || :
 	declare    LICENSE_SPDX                   || :
-	declare    THIS_FILEPATH                  || :
-	declare    THIS_FILENAME                  || :
-	declare    THIS_DIRPATH                   || :
 fi
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## For this module
-if [[ -z "${THIS_LIB_FILE_PATH_t5j9j+x}" ]]; then
+if [[ ! -v THIS_LIB_FILE_PATH_t5j9j ]]; then
 	## Constants
-	declare -r  THIS_LIB_FILE_PATH_t5j9j="$(realpath -e "${BASH_SOURCE[0]}")"
-	declare -r  THIS_LIB_FILE_NAME_t5j9j="$(basename "${THIS_LIB_FILE_PATH_t5j9j}")" #...: Replace with native bash function when ready.
-	declare -r  THIS_LIB_DIR_PATH_t5j9j="$(dirname "${THIS_LIB_FILE_PATH_t5j9j}")" #.....: Replace with native bash function when ready.
+	declare -gr  THIS_LIB_FILE_PATH_t5j9j="$(realpath -e "${BASH_SOURCE[0]}")"
+	declare -gr  THIS_LIB_FILE_NAME_t5j9j="$(basename "${THIS_LIB_FILE_PATH_t5j9j}")" #...: Replace with native bash function when ready.
+	declare -gr  THIS_LIB_DIR_PATH_t5j9j="$(dirname "${THIS_LIB_FILE_PATH_t5j9j}")" #.....: Replace with native bash function when ready.
 	## Variables
-	declare  -i wasShown_Version=0
-	declare  -i wasShown_Copyright=0
-	declare  -i wasShown_About
-	declare  -i wasShown_Syntax
+	declare -gi  wasShown_Version=0
+	declare -gi  wasShown_Copyright=0
+	declare -gi  wasShown_About=0
+	declare -gi  wasShown_Syntax=0
 fi
 
 
@@ -65,10 +64,10 @@ fShowCopyright(){
 	((doQuietly || wasShown_Copyright)) && return 0
 	local copyrightStr=""
 	wasShown_Version=0
-	copyrightStr+="$(fVersion)\n"
+	copyrightStr+="$(fShowVersion)\n"
 	copyrightStr+="Copyright © ${THIS_COPYRIGHT_YEARS} ${THIS_AUTHOR}.\n"
 	case "${LICENSE_SPDX,,}" in
-		"GPL-2.0-or-later")
+		"gpl-2.0-or-later")
 			copyrightStr+="Licensed under the GNU General Public License v2.0 or later. Full text at:\n"
 			copyrightStr+="  https://spdx.org/licenses/GPL-2.0-or-later.html\n"
 		;;
@@ -101,7 +100,7 @@ fShowSyntax(){
 fIntroPromptToContinue(){
 	((doQuietly || ! doPromptToContinue)) && return 0
 	local -r extraInfoString="${1:-}"
-	{ fEcho_Clean; fCopyright; fAbout; fEcho_Clean; }
+	{ fEcho_Clean; fShowCopyright; fShowAbout_Local; fEcho_Clean; }
 	[[ -n "${extraInfoString}" ]] && { fEcho_Clean; fEcho_Clean "${extraInfoString}"; }
 	fPromptYN "Continue? (y|n): " || { fEcho "User aborted."; return 1; }
 }
@@ -133,8 +132,21 @@ declare -i isSourced_t5ja2=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 ## Validate the assumption that required n8mod_core_v1 dependency is already loaded
 [[ "${N8MOD_CORE_V1_IS_LOADED}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
 
+## Validate this module interface as implemented by consuming script.
+[[ -n "${doQuietly}"                      ]]  ||  fThrowError "The variable 'doQuietly' must be defined by the calling script, for this module to work."
+[[ -n "${doPromptToContinue}"             ]]  ||  fThrowError "The variable 'doPromptToContinue' must be defined by the calling script, for this module to work."
+[[ -n "${ARGS_AT_LEAST_ONE_IS_REQUIRED}"  ]]  ||  fThrowError "The constant 'ARGS_AT_LEAST_ONE_IS_REQUIRED' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_VERSION}"                   ]]  ||  fThrowError "The constant 'THIS_VERSION' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_BUILD}"                     ]]  ||  fThrowError "The constant 'THIS_BUILD' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_COPYRIGHT_YEARS}"           ]]  ||  fThrowError "The constant 'THIS_COPYRIGHT_YEARS' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_AUTHOR}"                    ]]  ||  fThrowError "The constant 'THIS_AUTHOR' must be defined by the calling script, for this module to work."
+[[ -n "${LICENSE_SPDX}"                   ]]  ||  fThrowError "The constant 'LICENSE_SPDX' must be defined by the calling script, for this module to work."
+declare -f  fShowAbout_Local     &>/dev/null  ||  fThrowError "The function 'fShowAbout_Local' must be defined by the calling script, for this module to work. It may in turn call the fShowAbout() helper function in this module."
+declare -f  fShowSyntax_Local    &>/dev/null  ||  fThrowError "The function 'fShowSyntax_Local' must be defined by the calling script, for this module to work. It may in turn call the fShowSyntax() helper function in this module."
+
+
 ## Flag this module as loaded.
-[[ -n "${N8MOD_USER_V1_IS_LOADED+x}" ]] || declare -r N8MOD_USER_V1_IS_LOADED=1
+[[ -v N8MOD_INTERACT_V1_IS_LOADED ]] || declare -gr N8MOD_INTERACT_V1_IS_LOADED=1
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••

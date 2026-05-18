@@ -10,6 +10,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - *With the exception of much older entries, which A) didn't use this convention, and B) have been edited down for brevity since much of the code discussed has been long-gone since before putting the project on github. This more standardized changelog format wasn't followed until 2025-07-10. Anything older than that is a tossup.*
 
+<!--
+## NEXT VERSION
+
+### Notes
+
+### Added
+
+### Changed
+
+### Removed
+
+### Other work
+-->
+
+## v11.0.0-beta1 - 2026-05-18
+
+### Notes
+
+This is a significant refactor - in scope, but not so much actual effort. It encapsulates many ideas, and fixes some sore spots, I've wanted to address for years.
+
+It's also a revisit to an idea this library started out as long ago (a dynamic includable library), but the implementation back then was severely flawed, with a poor understanding at the time of the subtleties of bash script mechanics.
+
+### Added
+
+- CI/CD scripts.
+
+### Changed
+
+- Refactored to be modular dynamic libraries instead of one monolithic static template.
+	- *There's still a required template though to implement required module interfaces, it's just much smaller.*
+- Fixed linter errors.
+- AI-assisted debugging.
+
 ## v10.0.0-beta2 - 2026-04-09
 
 ### Changed
@@ -43,7 +76,7 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 - Checking for dependencies is now much easier, with dedicated functions. [≅2025-07-10]
 	- That themselves, internally, are horribly convoluted in order to create and test fRecord_*() along the way. They could have just been very simple string manipulations.
 - Added a HEREDOC section illustrating generic function usage examples. [≅2025-06]
-- Added some associative array handling functions, fRecord_* and fAssArr_*. Although conceptually cool in the context of limited Bash, they're probably pretty slow in large loop contexts, so maybe don't use for performance-critical bottlenecks. (Line-delimited strings at best, or multiple arrays with matching integer indexes at worst, is probably the better performance-preserving alternative.)  [≅2025-07-06 to 11]
+- Added some associative array handling functions, fRecord_\* and fAssArr_\*. Although conceptually cool in the context of limited Bash, they're probably pretty slow in large loop contexts, so maybe don't use for performance-critical bottlenecks. (Line-delimited strings at best, or multiple arrays with matching integer indexes at worst, is probably the better performance-preserving alternative.)  [≅2025-07-06 to 11]
 
 ### Changed
 
@@ -64,7 +97,7 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 - Refactored or rewrote at least a dozen existing functions, to be simpler and more bash-idiomatic. [≅2025-06 to 07]
 - Moved this changelog out of the template itself, and into this doc. (And reversed the chronology, and converted to md format.)
 - Added the venerable flag 'doPromptToContinue' back in! Thought it would never happen. But along with 'doQuietly', which is now longer rendundant, is a quick an easy way to add prompt-to-contiue-ing in and out with ease.
-- Renamed most _f*() functions to just f*() for user-fliendliness.
+- Renamed most \_f*() functions to just f*() for user-fliendliness.
 - Moved unit testing out of main template, now 'source' template from testing scripts.
 - Tested main template needed modification to be able to run "sourced" from one or more unit-testing files. (No changes needed.)
 - Split single copyright notice into two: one for template consumer & script author, second for 'based on' template author.
@@ -88,19 +121,19 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 
 ## 20250608
 
-- Added handy and robust _fRemoveOldLogs().
+- Added handy and robust \_fRemoveOldLogs().
 
 ## 20250606-07
 
-- Added _fGetFileSize(), _fTime_EpochAndMS_TruncateMS(), _fGetFileTime_mtime()
-- Added _fNormStr() back in.
+- Added \_fGetFileSize(), \_fTime_EpochAndMS_TruncateMS(), \_fGetFileTime_mtime()
+- Added \_fNormStr() back in.
 
 ## 20250319
 
 - Increased argument passing from 20 to 50.
-- Added _fAppendStr(), _fPad_Right(), _fBase10to32c(), _fBase10to256j1(), _ConditionalSandwichStr(), _fEchoVals()
-- Removed: _fstrAppend_byglobal_val(). ##			- Improved fParseArgs().
-- Replaced _fConditionalStr_byecho() with _fTernaryStr(), with different interface.
+- Added \_fAppendStr(), \_fPad_Right(), \_fBase10to32c(), \_fBase10to256j1(), \_ConditionalSandwichStr(), \_fEchoVals()
+- Removed: \_fstrAppend_byglobal_val(). ##			- Improved fParseArgs().
+- Replaced \_fConditionalStr_byecho() with \_fTernaryStr(), with different interface.
 
 ## 20241024
 
@@ -125,7 +158,7 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 
 ## 20190926
 
-- Added debugging functions and variables: _dbgNestLevel, _dbgIndentEachLevelBy, _fdbgEnter1(), _fdbgEgress1(), _fdbgEcho1(), _fPipeAllRawStdout1()
+- Added debugging functions and variables: \_dbgNestLevel, \_dbgIndentEachLevelBy, \_fdbgEnter1(), \_fdbgEgress1(), \_fdbgEcho1(), \_fPipeAllRawStdout1()
 - Changed everything beginning with "__" to "_"
 - Added to the end of every "function(){" statement:
 - Begin to change use of "${variable}" to just "$variable" to quicken dev and improve readability.
@@ -138,25 +171,25 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 ## 20190925
 
 - Added functions:
-	fTemplate(), _fUnitTest1(), _fAssert_AreEqual1(), _fAssert_Eval_AreEqual1(), _fStrJustify1_byecho()
-	_fdbgEchoVarAndVal1(), _fIndent_relative1(), _fStrKeepLeftN1_byecho(), _fStrKeepRightN1_byecho(), _fToInt1_byecho(), _fIndent_rltv1_pipe()
-- Renamed _fIndent1() to _fIndent_abs1_pipe()
+	fTemplate(), \_fUnitTest1(), \_fAssert_AreEqual1(), \_fAssert_Eval_AreEqual1(), \_fStrJustify1_byecho()
+	_fdbgEchoVarAndVal1(), \_fIndent_relative1(), \_fStrKeepLeftN1_byecho(), \_fStrKeepRightN1_byecho(), \_fToInt1_byecho(), \_fIndent_rltv1_pipe()
+- Renamed \_fIndent1() to \_fIndent_abs1_pipe()
 - Added routing logic to detect '--unit-test'
 - Converted the following functions from modifying named variables, to returning value via echo (due to 'eval' expression causing runtime errors due to unescaped problem characters in output strings):
 	_fEscapeStr1_byecho()
 	_fNormalizePath1_byecho()
 	_fNormalizeDir1_byecho()
-- _fstrAppend1_DEPRECATED_byref()
+- \_fstrAppend1_DEPRECATED_byref()
 	- Added a message to not use it (so it won't break existing scripts if template code updated).
-	- Added _fstrAppend1_byglobal() to use instead.
-- Enhanced _fpStrOps_TempReplacements1_byecho(), and _fEscapeStr1_byecho()
-- Added an input argument to _fEchoVarAndVal1(): function name.
+	- Added \_fstrAppend1_byglobal() to use instead.
+- Enhanced \_fpStrOps_TempReplacements1_byecho(), and \_fEscapeStr1_byecho()
+- Added an input argument to \_fEchoVarAndVal1(): function name.
 - Added global constant: doDebug=0.
 
 ## 20190925
 
-- Added _fPipe_Blake12_Base64URL(), _fPipe_Uuid_Base164URL()
-- Renamed _Indent() to _fIndent_abs1_pipe()
+- Added \_fPipe_Blake12_Base64URL(), \_fPipe_Uuid_Base164URL()
+- Renamed _Indent() to \_fIndent_abs1_pipe()
 
 ## 20190923
 
@@ -184,7 +217,7 @@ Since this script is moving towards more idiomatic standards-compliance anyway, 
 
 ## 20171217
 
-- Forked 0_library_v1 to _v2 (leaving _v1 intact as another 'legacy' library), and:
+- Forked 0_library_v1 to _v2 (leaving \_v1 intact as another 'legacy' library), and:
 - Moved execution logic to library.
 - Fuller use of fPackArgs() and fUnpackArgs().
 - Created unit-testing functions.

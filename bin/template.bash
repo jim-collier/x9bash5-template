@@ -26,52 +26,54 @@
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## Settings and constants
 
-if [[ -z "${doQuietly+x}" ]]; then
+if [[ ! -v doQuietly ]]; then
 
 	## Required by this template
-	declare -ri ARGS_AT_LEAST_ONE_IS_REQUIRED=0
-	declare -ri ARGS_MAX_POSITIONAL_COUNT=0
+	declare -gri ARGS_AT_LEAST_ONE_IS_REQUIRED=0
+	declare -gri ARGS_MAX_POSITIONAL_COUNT=0
 
 	## Required by n8mod_core_v1
-	declare -r  THIS_FILEPATH="$(realpath -e "${0}")"
-	declare -r  THIS_FILENAME="$(basename "${THIS_FILEPATH}")"
-	declare -r  THIS_DIRPATH="$(dirname "${THIS_FILEPATH}")"
-	declare -ri DO_CHAIN_SUDO=1  ## Don't have to use
+	declare -gr  THIS_FILEPATH="$(realpath -e "${0}")"
+	declare -gr  THIS_FILENAME="$(basename "${THIS_FILEPATH}")"
+	declare -gr  THIS_DIRPATH="$(dirname "${THIS_FILEPATH}")"
+	declare -gri DO_CHAIN_SUDO=1  ## Don't have to use
 	## Populated by n8mod_core_v1
-	declare     SERIAL_DATETIME
-	declare     RELAUNCH_SENTINELVAL
+	declare -g   SERIAL_DATETIME
+	declare -g   RELAUNCH_SENTINELVAL
 
 	## Required by n8mod_user_v1
-	declare  -i doQuietly=0
-	declare  -i doPromptToContinue=0
-	declare -r  THIS_VERSION="1.0.0-beta1"
-	declare -r  THIS_BUILD="1n0pagv"
-	declare -r  THIS_COPYRIGHT_YEARS="2011-2026"
-	declare -r  THIS_AUTHOR="Jim Collier"
-	declare -r  LICENSE_SPDX="GPL-2.0-or-later"   ## Valid so far: GPL-2.0-or-later
+	declare -gi doQuietly=0
+	declare -gi doPromptToContinue=1
+	declare -gr THIS_VERSION="1.0.0-beta1"
+	declare -gr THIS_BUILD="1n0pagv"
+	declare -gr THIS_COPYRIGHT_YEARS="2011-2026"
+	declare -gr THIS_AUTHOR="Jim Collier"
+	declare -gr LICENSE_SPDX="GPL-2.0-or-later"   ## Valid so far: GPL-2.0-or-later
 
 fi
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-fShowAbout_Local(){ local aboutStr=""
+fShowAbout_Local(){
+	local aboutStr=""
 	#         X-------------------------------------------------------------------------------X
 	aboutStr+="A thing that does some stuff, like:\n"
 	aboutStr+="  • This.\n"
-	aboutStr+="  • And that.\n"
+	aboutStr+="  • And that."
 	#         X-------------------------------------------------------------------------------X
 	fShowAbout aboutStr
 }
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-fSyntax_Local(){ local syntaxStr=""
+fShowSyntax_Local(){
+	local syntaxStr=""
 	#          X-------------------------------------------------------------------------------X
 	syntaxStr+="Arguments:\n"
 	syntaxStr+="  --quiet\n"
 	syntaxStr+="      [optional]: Be less verbose, and don't prompt user to continue.\n"
 	syntaxStr+="  --help, --about, --version [or -h, -a, -v]"
 	#          X-------------------------------------------------------------------------------X
-	fShowSyntax aboutStr
+	fShowSyntax syntaxStr
 }
 
 
@@ -94,8 +96,8 @@ fMain(){ :;
 
 	## Prompt to continue
 	if ((! doQuietly)); then
-		fCopyright
-		fAbout
+		fShowCopyright
+		fShowAbout_Local
 		fEcho_Clean "Some info ...............: ${USER}"
 		fEcho_Clean "More info ...............: ${HOME}"
 		fIntroPromptToContinue  ""
@@ -128,11 +130,11 @@ fParseArgs(){
 	## Look for stars "✶✶✶✶✶✶✶✶" for places to custom-modify unique instances of this function.
 
 	## Check for need to show help etc.
-	{ ((ARGS_AT_LEAST_ONE_IS_REQUIRED)) && [[ -z "${1:-}${2:-}${3:-}${4:-}" ]]; } && { fCopyright; fShowAbout_Local; fSyntax_Local; return 1; }
+	{ ((ARGS_AT_LEAST_ONE_IS_REQUIRED)) && [[ -z "${1:-}${2:-}${3:-}${4:-}" ]]; } && { fShowCopyright; fShowAbout_Local; fShowSyntax_Local; return 1; }
 	case " ${*,,} " in
-		*" -h "*|*" --help "*|*" -help "*)                               fCopyright; fShowAbout_Local; fSyntax_Local  ; exit 0 ;;
-		*" -a "*|*" --about "*|*" -about "*)                             fCopyright; fShowAbout_Local                 ; exit 0 ;;
-		*" -v "*|*" --version "*|*" -version "*|*" --ver "|*" -ver "**)  fVersion; doQuietly=1                        ; exit 0 ;;
+		*" -h "*|*" --help "*|*" -help "*)                               fShowCopyright; fShowAbout_Local; fShowSyntax_Local  ; exit 0 ;;
+		*" -a "*|*" --about "*|*" -about "*)                             fShowCopyright; fShowAbout_Local                 ; exit 0 ;;
+		*" -v "*|*" --version "*|*" -version "*|*" --ver "|*" -ver "**)  fShowVersion; doQuietly=1                        ; exit 0 ;;
 	esac
 
 	## GENERIC (don't modify): Populate args array and string.
@@ -261,7 +263,11 @@ fLoadModule_v1(){
 	local -r arg_ModuleName="${1:-}"  # ; shift || :  ## Module name
 	local resolvedPath=""
 	fResolvePath_v1  resolvedPath  arg_ModuleName
+	# shellcheck source=/dev/null
 	[[ -f "${resolvedPath}" ]] && source "${resolvedPath}"
+		## Note that since we're source'ing inside a function, and regular 'declare' in global
+		## scope within those modules, will actually be local scope to this function. The fix
+		## is to just idiomatically always declare global variables/constants with `-g`.
 :;}
 fResolvePath_v1(){
 	## Purpose: Resolves an argument to a canonical full path, while being careful to not be too broad as to resolve to something else with the same name.

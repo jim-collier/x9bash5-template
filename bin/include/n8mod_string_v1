@@ -21,18 +21,29 @@
 ##	Module copyright: At bottom of script.
 ##	Module history: At bottom of script. (Maintained separately from and/or in addition to, cloud-based version control.)
 
+## Bail if already loaded
+[[ "${N8MOD_STRING_V1_IS_LOADED:-}" == "1" ]] && return
+
+## The following are defined here only for linter support.
+## They are required to be defined first by the calling script, so should never get inside the if/fi.
+#if [[ ! -v THIS_FILEPATH ]]; then
+#	declare    THIS_FILEPATH  || :
+#	declare    THIS_FILENAME  || :
+#	declare    THIS_DIRPATH   || :
+#fi
+
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## For this module
-if [[ -z "${THIS_LIB_FILE_PATH_t5ht9+x}" ]]; then
+## Globals for this module. (The existence check is redundant but that's OK.)
+if [[ ! -x THIS_LIB_FILE_PATH_t5ht9 ]]; then
 	## Constants
-	declare -r THIS_LIB_FILE_PATH_t5ht9="$(realpath -e "${BASH_SOURCE[0]}")"
-	declare -r THIS_LIB_FILE_NAME_t5hte="$(basename "${THIS_LIB_FILE_PATH_t5ht9}")" #...: Replace with native bash function when ready.
-	declare -r THIS_LIB_DIR_PATH_t5hte="$(dirname "${THIS_LIB_FILE_PATH_t5ht9}")" #.....: Replace with native bash function when ready.
+	declare -gr THIS_LIB_FILE_PATH_t5ht9="$(realpath -e "${BASH_SOURCE[0]}")"
+	declare -gr THIS_LIB_FILE_NAME_t5hte="$(basename "${THIS_LIB_FILE_PATH_t5ht9}")" #...: Replace with native bash function when ready.
+	declare -gr THIS_LIB_DIR_PATH_t5hte="$(dirname "${THIS_LIB_FILE_PATH_t5ht9}")" #.....: Replace with native bash function when ready.
 fi
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ## String functions
-[[ -z "${BUILD_QUOTED_PARAMS_CHECK_PATTERN+x}" ]] && declare -r BUILD_QUOTED_PARAMS_CHECK_PATTERN=$'[][[:space:]|&;()<>`*?$!~{}\'\"#=,%@\\]'  ## If an arg has any of these in it, it needs quoting.
+[[ ! -v BUILD_QUOTED_PARAMS_CHECK_PATTERN ]] && declare -gr BUILD_QUOTED_PARAMS_CHECK_PATTERN=$'[][[:space:]|&;()<>`*?$!~{}\'\"#=,%@\\]'  ## If an arg has any of these in it, it needs quoting.
 fBuildQuotedParams(){
 	## Given up to 99 arguments following the parent variable to populate, populates that variable with a string, with the original arguments either as-is, or in quotes if they need it.
 	local -n varName_1mtkp9p=$1 ; shift || true  ## First argument is caller's variable to put results in. Remainging <= 99 variables are to put in quoted string.
@@ -56,10 +67,15 @@ declare -i isSourced_t5hte=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 ((isSourced_t5hte)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
 
 ## Validate the assumption that required n8mod_core_v1 dependency is already loaded
-[[ "${N8MOD_CORE_V1_IS_LOADED}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
+[[ "${N8MOD_CORE_V1_IS_LOADED:-}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
+
+## Validate this module interface as implemented by consuming script.
+#[[ -n "${THIS_FILEPATH:-}" ]] || fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_FILENAME:-}" ]] || fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_DIRPATH:-}"  ]] || fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
 
 ## Flag this module as loaded.
-[[ -n "${N8MOD_STRING_V1_IS_LOADED+x}" ]] || declare -r N8MOD_STRING_V1_IS_LOADED=1
+[[ -v N8MOD_STRING_V1_IS_LOADED ]] || declare -gr N8MOD_STRING_V1_IS_LOADED=1
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••

@@ -1,0 +1,182 @@
+#!/bin/env bash
+
+#  shellcheck disable=2001  ## 'See if you can use ${variable//search/replace} instead.' Complains about good uses of sed.
+#  shellcheck disable=2002  ## 'Useless use of cat.'
+#  shellcheck disable=2016  ## 'Expressions don't expand in single quotes, use double quotes for that.' I know, and I often want an explicit '$'.
+#  shellcheck disable=2034  ## 'variable appears unused.' Complains about valid use of variable indirection (e.g. later use of local -n var=$1)
+#  shellcheck disable=2046  ## 'Quote to prevent word-splitting.' (OK for integers.)
+#  shellcheck disable=2086  ## 'Double quote to prevent globbing and word splitting.' (OK for integers.)
+#  shellcheck disable=2119  ## 'Use foo "$@" if function's $1 should mean script's $1.' Confusing and inapplicable.
+#  shellcheck disable=2120  ## 'Foo references arguments, but none are ever passed.' Valid function argument overloading.
+#  shellcheck disable=2128  ## 'Expanding an array without an index only gives the element in the index 0.' False hits on associative arrays.
+#  shellcheck disable=2143  ## 'Use grep -q instead of echo | grep'
+#  shellcheck disable=2155  ## 'Declare and assign separately to avoid masking return values.' Cumbersome and unnecessary. For integers it's sometimes required to even come into existence for counters.
+#  shellcheck disable=2162  ## 'read without -r will mangle backslashes.'
+#  shellcheck disable=2178  ## 'Variable was used as an array but is now assigned a string.' False hits on associative arrays with e.g. 'local -n assocArray=$1'.
+#  shellcheck disable=2181  ## 'Check exit code directly, not indirectly with $?.'
+#  shellcheck disable=2317  ## 'Can't reach.' (I.e. an 'exit' is used for debugging - and makes an unusable visual mess.)
+## shellcheck disable=2004  ## '$/${} is unnecessary on arithmetic variables.' Inappropriate complaining?
+## shellcheck disable=2053  ## 'Quote the right-hand side of = in [[ ]] to prevent glob matching.' Disable for Yoda Notation.
+
+##	Module copyright: At bottom of script.
+##	Module history: At bottom of script. (Maintained separately from and/or in addition to, cloud-based version control.)
+
+## Bail if already loaded
+[[ "${N8MOD_NUMBER_V1_IS_LOADED:-}" == "1" ]] && return
+
+## The following are defined here only for linter support.
+## They are required to be defined first by the calling script, so should never get inside the if/fi.
+#if [[ ! -v THIS_FILEPATH ]]; then
+#	declare    THIS_FILEPATH  || :
+#	declare    THIS_FILENAME  || :
+#	declare    THIS_DIRPATH   || :
+#fi
+
+#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Globals for this module. (The existence check is redundant but that's OK.)
+if [[ ! -v THIS_LIB_FILE_PATH_t5jm0 ]]; then
+	## Constants
+	declare -gr THIS_LIB_FILE_PATH_t5jm0="$(realpath -e "${BASH_SOURCE[0]}")"
+	declare -gr THIS_LIB_FILE_NAME_t5jm0="$(basename "${THIS_LIB_FILE_PATH_t5jm0}")" #...: Replace with native bash function when ready.
+	declare -gr THIS_LIB_DIR_PATH_t5jm0="$(dirname "${THIS_LIB_FILE_PATH_t5jm0}")" #.....: Replace with native bash function when ready.
+	## Bash-native regex
+	declare -gr BREGEX_IS_PURE_INT='^-?[0-9]+$'
+	declare -gr BREGEX_IS_PURE_INT_OR_FLOAT='^-?[0-9]+(\.[0-9]+)?$'
+fi
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Functions
+
+fIsBool(){
+	##	Purpose: Function return val of 0 [success] if input is boolean, >0 [failure] if not.
+	local -r inputVal="${1:-}"  # ; shift || :  ##
+	case "${inputVal,,}" in
+		"1"|"true"|"yes"|"y"|"t")                        return 0  ;;  ## 0 for function return means "success", it is boolean.
+		"0"|"false"|"no"|"n"|"f")                        return 0  ;;  ## 0 for function return means "success", it is boolean.
+		*) [[ "${inputVal}" =~ $BREGEX_IS_PURE_INT ]] && return 0  ;;  ## 0 for function return means "success", it is boolean.
+	esac
+	return 1  ## 1 for function return means "failure", it is not boolean.
+}
+
+fIsBoolTrue(){
+	##	Purpose: Function return val of 0 [success] for boolean input that is "true", >0 [failure] if "false".
+	##           The function return code, and traditional boolean integer values, are reversed in this case.
+	##	         Errors on non-boolean input.
+	local -r inputVal=$1  # ; shift || :  ##
+	case "${inputVal,,}" in
+		"1"|"true"|"yes"|"y"|"t")  return 0  ;;  ## 0 means function "success", or boolean true.
+		"0"|"false"|"no"|"n"|"f")  return 1  ;;  ## >0 means "failure", or boolean false.
+		*)
+			if [[ "${inputVal}" =~ $BREGEX_IS_PURE_INT ]]; then
+				((inputVal == 0)) && return 1  ## 1 for function return means "failure", or boolean false.
+				return 0  ## 0 means function "success", or boolean true.
+			fi
+		;;
+	esac
+	fThrowError "Input value is not boolean: '${inputVal}'."
+}
+
+fGetRandomInt(){
+	##	Purpose: Return a cryptographically valid integer between low and high ints, inclusive.
+	##	WARNING: Bash >= 5.1 only.
+	##	This is ~40x faster than using subshells e.g. for `shuf`, and ~4x faster than fGetRandomInt_SlowerBetter().
+	## Validate nameref args:
+	[[ -v 1 ]] || fThrowError "Calling function must pass a nameref to receive this function's integer output, as arg1."
+	## Gather args
+	local -n  ptr_Output_s8hk7=$1  ; shift || :  ## <REQUIRED>: Caller nameref for return int.
+	local -ri intLow=${1:-0}       ; shift || :  ## <REQUIRED>: Lowest int, inclusive. Can be negative.
+	local -ri intHigh=${1:-1}      ; shift || :  ## <REQUIRED>: Highest int, inclusive. Upper limit: (intHigh - intLow + 1) ≤ 4,294,967,295.
+	## Init
+	ptr_Output_s8hk7=0
+	## Logic
+	local -i range=$(( intHigh - intLow + 1 ))
+	local -i max_unbiased=$(( (2**32 / range) * range - 1 ))  ## Largest multiple of range that fits in 32 bits. Values above this would bias lower buckets if included.
+	local -i val
+	while true; do
+		val=$SRANDOM
+		(( val <= max_unbiased )) && break
+	done
+	ptr_Output_s8hk7=$(( intLow + (val % range) ))
+:;}
+
+
+fGetRandomInt_SlowerBetter(){
+	##	Purpose: Return a cryptographically valid integer between low and high ints, inclusive.
+	##	Note: $RANDOM can do similar, but is not uniformly random, or crypto-secure.
+	##	This is 10x faster than using subshells e.g. for `shuf`.
+	## Validate nameref args:
+	[[ -v 1 ]] || fThrowError "Calling function must pass a nameref to receive this function's integer output, as arg1."
+	## Gather args
+	local -n  ptr_Output_s8hk7=$1  ; shift || :  ## <REQUIRED>: Caller nameref for return int.
+	local -ri intLow=${1:-0}       ; shift || :  ## <REQUIRED>: Lowest int, inclusive. Can be negative.
+	local -ri intHigh=${1:-1}      ; shift || :  ## <REQUIRED>: Highest int, inclusive. Upper limit: (intHigh - intLow + 1) ≤ 4,294,967,295.
+	## Init
+	ptr_Output_s8hk7=0
+	## Logic
+	local -i range=$(( intHigh - intLow + 1 ))
+	local -i bytes_needed=$(( (range < 256) ? 1 : (range < 65536) ? 2 : 4 ))
+	local -i max_unbiased=$(( (256**bytes_needed / range) * range - 1 ))
+	local -i val
+	local raw
+	while true; do
+		IFS= read -r -d '' -n "$bytes_needed" raw < /dev/urandom
+		val=0
+		local -i i
+		for (( i=0; i<bytes_needed; i++ )); do
+			printf -v byte '%d' "'${raw:$i:1}"
+			val=$(( (val * 256) + byte ))
+		done
+		(( val <= max_unbiased )) && break
+	done
+	ptr_Output_s8hk7=$(( intLow + (val % range) ))
+:;}
+
+
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Script initialization
+
+## Check if sourced
+declare -i isSourced_t5jm0=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5jm0=1
+((isSourced_t5jm0)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
+
+## Validate the assumption that required n8mod_core_v1 dependency is already loaded
+[[ "${N8MOD_CORE_V1_IS_LOADED:-}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
+
+## Validate this module interface as implemented by consuming script.
+#[[ -n "${THIS_FILEPATH:-}"  ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_FILENAME:-}"  ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_DIRPATH:-}"   ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
+#fIsFunction fLoadModule_v1      ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+
+## Load dependency modules other than n8mod_code_v1.
+#[[ -v N8MOD_STRING_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_string_v1
+
+## Flag this module as loaded.
+[[ -v N8MOD_NUMBER_V1_IS_LOADED ]] || declare -gr N8MOD_NUMBER_V1_IS_LOADED=1
+
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Module Copyright and license:
+##		n8mod_core_v1.1.bash from https://github.com/jim-collier/x9bash5-template
+##		Copyright © 2026 Jim Collier (ID: 1cv◂‡Vᛦ)
+##		Licenced under GPL v2.0-or-later. No warranty.
+##
+##		SPDX-License-Identifier: GPL-2.0-or-later:
+##
+##		This program is free software: you can redistribute it and/or modify
+##		it under the terms of the GNU General Public License as published by
+##		the Free Software Foundation, either version 2 of the License, or
+##		(at your option) any later version.
+##
+##		This program is distributed in the hope that it will be useful,
+##		but WITHOUT ANY WARRANTY; without even the implied warranty of
+##		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##		GNU General Public License for more details.
+##
+##		You should have received a copy of the GNU General Public License
+##		along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Module history:
+##		- 20260517 JC: Created.

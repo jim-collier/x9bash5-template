@@ -43,18 +43,16 @@ fi
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Run stuff
+## Run stuff (note: program name is "${1}")
 fRunGui(){
-	local -r toExec_1mvrbsv="${1:-}"  ## Only used for testing validity. When executed, it's just another "parameter".
-	[[ -n "${toExec_1mvrbs1}" ]] || fThrowError "Nothing specified to run."
+	[[ -n "${1:-}" ]] || fThrowError "Nothing specified to run."
 	local quotedParams=""; fBuildQuotedParams  quotedParams  "${@}"
 	echo "Executing: ( (eval \"nohup ${quotedParams}  &>/dev/null\") & disown ) &>/dev/null"  ## Debug output to console. Users won't see since this is run by GUI.
 	( (eval "nohup ${quotedParams}  &>/dev/null") & disown ) &>/dev/null
 }
 fRunSilentlyWithoutError(){ fRunGui  "${@}"; }
 fRunGuiAsSudo(){
-	local -r toExec_1mvrbs1="${1:-}"  ## Only used for testing validity. When executed, it's just another "parameter".
-	[[ -n "${toExec_1mvrbs1}" ]] || fThrowError "Nothing specified to run."
+	[[ -n "${1:-}" ]] || fThrowError "Nothing specified to run."
 	local quotedParams=""
 	fBuildQuotedParams  quotedParams  "${@}"
 	sudo true
@@ -75,10 +73,10 @@ declare -i isSourced_t5jhk=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 [[ "${N8MOD_CORE_V1_IS_LOADED:-}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
 
 ## Validate this module interface as implemented by consuming script.
-#[[ -n "${THIS_FILEPATH:-}"          ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
-#[[ -n "${THIS_FILENAME:-}"          ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
-#[[ -n "${THIS_DIRPATH:-}"           ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
-declare -f  fLoadModule_v1  &>/dev/null  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+#[[ -n "${THIS_FILEPATH:-}" ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_FILENAME:-}" ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_DIRPATH:-}"  ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
+fIsFunction fLoadModule_v1      ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
 
 ## Load dependency modules other than n8mod_code_v1.
 [[ -v N8MOD_STRING_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_string_v1

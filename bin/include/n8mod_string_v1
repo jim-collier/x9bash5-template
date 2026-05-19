@@ -42,16 +42,78 @@ if [[ ! -v THIS_LIB_FILE_PATH_t5jec ]]; then
 fi
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Quoted params
+## Functions
+
+fGetStrMatchPos(){
+	##	Purpose: Returns 1-based index of position of first match. 0= no match.
+	##	Notes: Uses namerefs in so that any of the strings can be huge, with less performance hit.
+	## Validate nameref args:
+	[[ -v 1 ]]  ||  fThrowError "Calling function must pass a nameref to receive this function's integer output, as arg1."
+	[[ -v 2 ]]  ||  fThrowError "Calling function must pass a nameref to supply arg2 to this function (the source string)."
+	[[ -v 3 ]]  ||  fThrowError "Calling function must pass a nameref to supply arg3 to this function (the search substring)."
+	## Gather args
+	local -n ptr_Output_s74ht=$1         ; shift || :  ## Arg <REQUIRED>: Nameref: Int return value, 0=no match, >=1 position of start of firt match.
+	local -n ptr_SuperString_s74ht=$1    ; shift || :  ## Arg <REQUIRED>: Nameref: String: Main string to search in.
+	local -n ptr_FindSubString_s74ht=$1  ; shift || :  ## Arg <REQUIRED>: Nameref: String: String to find.
+	## Init
+	ptr_Output_s74ht=0
+	## Logic
+	{ [[ -z "${ptr_SuperString_s74ht}" ]] || [[ -z "${ptr_FindSubString_s74ht}" ]]; } && return 0
+	local -r testStr="${ptr_SuperString_s74ht%%"$ptr_FindSubString_s74ht"*}"
+	[[ "${testStr}" != "${ptr_SuperString_s74ht}" ]] && ptr_Output_s74ht=$((${#testStr}+1))
+:;}
+
+fSplitStr (){
+	##	Purpose: Split a string into left and right parts, on first occurrence of a given delimiter and specified scan direction.
+	##	Notes: Uses namerefs in so that any of the strings can be huge, with less performance hit.
+	## Validate nameref args:
+	[[ -v 1 ]] || fThrowError "Calling function must pass a nameref as arg1 to receive this function's 'left' output."
+	[[ -v 2 ]] || fThrowError "Calling function must pass a nameref as arg2 to receive this function's 'right' output."
+	[[ -v 3 ]] || fThrowError "Calling function must pass a nameref to supply arg3 as the input source string to this function (source string to split)."
+	## Gather args
+	local -n  ptr_output_LeftStr_s8hd0=$1       ; shift || :  ## Arg <REQUIRED>: Nameref: Str return value; left substring.
+	local -n  ptr_output_RightStr_s8hd0=$1      ; shift || :  ## Arg <REQUIRED>: Nameref: Str return value; right substring.
+	local -n  ptr_arg_SourcStr_s8hd0=$1         ; shift || :  ## Arg <REQUIRED>: Nameref: Str: Source nameref with string to parse.
+	local -r  delimStr="${1:- }"                ; shift || :  ## Arg [optional]: Str: The delimiter or substring to split on (default: space).
+	local -ri fromRight=${1:-0}                 ; shift || :  ## Arg [optional]: Int: 0 if scan from left (default), 1 if from right (e.g. for first '.' filename extension).
+	## Init
+	ptr_output_LeftStr_s8hd0=""
+	ptr_output_RightStr_s8hd0=""
+	## Conditions where we know nothing will be returned.
+	[[ -z "${ptr_arg_SourcStr_s8hd0}"  ]] && return 0
+	if ((fromRight)); then
+		## Conditions where we know that left will be empty, and right will == input.
+		[[ -z "${delimStr}"                                ]]  &&  { ptr_output_RightStr_s8hd0="${ptr_arg_SourcStr_s8hd0}"; return 0; }  ## Delimiter is empty.
+		[[     ${#delimStr} -ge ${#ptr_arg_SourcStr_s8hd0} ]]  &&  { ptr_output_RightStr_s8hd0="${ptr_arg_SourcStr_s8hd0}"; return 0; }  ## Delimiter is longer than source.
+		[[ "${ptr_arg_SourcStr_s8hd0}" != *"${delimStr}"*  ]]  &&  { ptr_output_RightStr_s8hd0="${ptr_arg_SourcStr_s8hd0}"; return 0; }  ## Delimiter not in source [technically a superset of previous test].
+		## Split on LAST match
+		ptr_output_LeftStr_s8hd0="${ptr_arg_SourcStr_s8hd0%"${delimStr}"*}"
+		ptr_output_RightStr_s8hd0="${ptr_arg_SourcStr_s8hd0##*"${delimStr}"}"
+	else
+		## Conditions where we know that right will be empty, and one left == input.
+		[[ -z "${delimStr}"                                ]]  &&  { ptr_output_LeftStr_s8hd0="${ptr_arg_SourcStr_s8hd0}"; return 0; }  ## Delimiter is empty.
+		[[     ${#delimStr} -ge ${#ptr_arg_SourcStr_s8hd0} ]]  &&  { ptr_output_LeftStr_s8hd0="${ptr_arg_SourcStr_s8hd0}"; return 0; }  ## Delimiter is longer than source.
+		[[ "${ptr_arg_SourcStr_s8hd0}" != *"${delimStr}"*  ]]  &&  { ptr_output_LeftStr_s8hd0="${ptr_arg_SourcStr_s8hd0}"; return 0; }  ## Delimiter not in source [technically a superset of previous test].
+		## Split on FIRST match
+		ptr_output_LeftStr_s8hd0="${ptr_arg_SourcStr_s8hd0%%"${delimStr}"*}"
+		ptr_output_RightStr_s8hd0="${ptr_arg_SourcStr_s8hd0#*"${delimStr}"}"
+	fi
+:;}
+
+##	Quoted params
+##		Purpose: Build a string from input parameters, with thing that need quoting, quoted, and thing that don't, not.
+##		Example: fBuildQuotedParams myReturnVar Now_is "the time" for    '{12}'   'it\'s'  "thing > 1" goto 10."
+##			"${myReturnVar}" == 'Now_is "the time" for "{12}" "it's" "thing > 1" goto 10."'
 if [[ ! -v BUILD_QUOTED_PARAMS_CHECK_PATTERN ]]; then
+	## Global constants
 	declare -gr  BUILD_QUOTED_PARAMS_CHECK_PATTERN=$'[][[:space:]|&;()<>`*?$!~{}\'\"#=,%@\\]'  ## If an arg has any of these in it, it needs quoting.
 	declare -gri BUILD_QUOTED_PARAMS_MAX_BLANK=10
 fi
 fBuildQuotedParams(){
-	## Arg 1
-	local -n ptr_Output_1mtkp9p=${1:-} ; shift || :  ## The caller variable to instert the return value into.
-	## Validate
-	[[ -v ptr_Output_1mtkp9p ]] || fThrowError "Calling function must pass a nameref to receive this function's output."
+	## Validate nameref args:
+	[[ -v 1 ]] || fThrowError "Calling function must pass a nameref to receive this function's output, as arg1."
+	## Gather args
+	local -n ptr_Output_1mtkp9p=1  # ; shift || :  ## The caller variable to instert the return value into.
 	## Init
 	ptr_Output_1mtkp9p=""
 	local retVal=""
@@ -85,10 +147,13 @@ declare -i isSourced_t5jec=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 [[ "${N8MOD_CORE_V1_IS_LOADED:-}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
 
 ## Validate this module interface as implemented by consuming script.
-#[[ -n "${THIS_FILEPATH:-}"           ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
-#[[ -n "${THIS_FILENAME:-}"           ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
-#[[ -n "${THIS_DIRPATH:-}"            ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
-#declare -f  fLoadModule_v1  &>/dev/null  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+#[[ -n "${THIS_FILEPATH:-}" ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_FILENAME:-}" ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_DIRPATH:-}"  ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
+#fIsFunction fLoadModule_v1     ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+
+## Load dependency modules other than n8mod_code_v1.
+#[[ -v N8MOD_NUMEBR_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_number_v1
 
 ## Flag this module as loaded.
 [[ -v N8MOD_STRING_V1_IS_LOADED ]] || declare -gr N8MOD_STRING_V1_IS_LOADED=1

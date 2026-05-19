@@ -1,0 +1,212 @@
+#!/bin/env bash
+
+#  shellcheck disable=2001  ## 'See if you can use ${variable//search/replace} instead.' Complains about good uses of sed.
+#  shellcheck disable=2002  ## 'Useless use of cat.'
+#  shellcheck disable=2016  ## 'Expressions don't expand in single quotes, use double quotes for that.' I know, and I often want an explicit '$'.
+#  shellcheck disable=2034  ## 'variable appears unused.' Complains about valid use of variable indirection (e.g. later use of local -n var=$1)
+#  shellcheck disable=2046  ## 'Quote to prevent word-splitting.' (OK for integers.)
+#  shellcheck disable=2086  ## 'Double quote to prevent globbing and word splitting.' (OK for integers.)
+#  shellcheck disable=2119  ## 'Use foo "$@" if function's $1 should mean script's $1.' Confusing and inapplicable.
+#  shellcheck disable=2120  ## 'Foo references arguments, but none are ever passed.' Valid function argument overloading.
+#  shellcheck disable=2128  ## 'Expanding an array without an index only gives the element in the index 0.' False hits on associative arrays.
+#  shellcheck disable=2143  ## 'Use grep -q instead of echo | grep'
+#  shellcheck disable=2155  ## 'Declare and assign separately to avoid masking return values.' Cumbersome and unnecessary. For integers it's sometimes required to even come into existence for counters.
+#  shellcheck disable=2162  ## 'read without -r will mangle backslashes.'
+#  shellcheck disable=2178  ## 'Variable was used as an array but is now assigned a string.' False hits on associative arrays with e.g. 'local -n assocArray=$1'.
+#  shellcheck disable=2181  ## 'Check exit code directly, not indirectly with $?.'
+#  shellcheck disable=2317  ## 'Can't reach.' (I.e. an 'exit' is used for debugging - and makes an unusable visual mess.)
+## shellcheck disable=2004  ## '$/${} is unnecessary on arithmetic variables.' Inappropriate complaining?
+## shellcheck disable=2053  ## 'Quote the right-hand side of = in [[ ]] to prevent glob matching.' Disable for Yoda Notation.
+
+##	Module copyright: At bottom of script.
+##	Module history: At bottom of script. (Maintained separately from and/or in addition to, cloud-based version control.)
+
+## Bail if already loaded
+[[ "${N8MOD_LOGGING_V1_IS_LOADED:-}" == "1" ]] && return
+
+## The following are defined here only for linter support.
+## They are required to be defined first by the calling script, so should never get inside the if/fi.
+#if [[ ! -v THIS_FILEPATH ]]; then
+#	declare    THIS_FILEPATH  || :
+#	declare    THIS_FILENAME  || :
+#	declare    THIS_DIRPATH   || :
+#fi
+
+#•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Globals for this module. (The existence check is redundant but that's OK.)
+if [[ ! -v THIS_LIB_FILE_PATH_t5jqf ]]; then
+	## Constants
+	declare -gr THIS_LIB_FILE_PATH_t5jqf="$(realpath -e "${BASH_SOURCE[0]}")"
+	declare -gr THIS_LIB_FILE_NAME_t5jqf="$(basename "${THIS_LIB_FILE_PATH_t5jqf}")" #...: Replace with native bash function when ready.
+	declare -gr THIS_LIB_DIR_PATH_t5jqf="$(dirname "${THIS_LIB_FILE_PATH_t5jqf}")" #.....: Replace with native bash function when ready.
+	## Bash-native regex
+	declare -gr BREGEX_IS_PURE_INT='^-?[0-9]+$'
+	declare -gr BREGEX_IS_PURE_INT_OR_FLOAT='^-?[0-9]+(\.[0-9]+)?$'
+fi
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Functions
+
+[[ -z "${_removeOldLogs_default_maxLogfiles+x}" ]] && declare -r  defaultLogMiddleSubdirs="var/log"
+declare     _vLog_Dir=""  _vLog_Filename=""  _vLog_Filespec=""  _vLog_WiledcardSpec=""  _vLog_Owner=""
+declare  -i _vLog_DidInitVars=0  _vLog_DidInitFsObjs=0
+fLog_GetFilespec(){
+	##	Purpose: Initializes everything and gives you the log filespec, without actually creating anything yet.
+	##	Args:
+	##		1 [REQUIRED]: varName      The variable to populate.
+	##		2 [optional]: LogDir       If not specified, defaults to "$(fGetOgUserHome)/var/log/${meName}"
+	##		3 [optional]: logFileName  If NOT specified, logfile rotation will work, and defaults to "${meName}_${serialDT}.log"
+	##		4 [optional]: Username for ownership and/or homedir calculation
+	local -n refVar=$1 ; shift || true
+	__pLog_InitVars  "${1:-}"  "${2:-}"  "${3:-}"
+	refVar="${_vLog_Filespec}"
+}
+
+fLog_Init(){
+	##	Purpose: Initializes everything and creates the logfile.
+	##	Optional args:
+	##		1: LogDir       If not specified, defaults to "$(fGetOgUserHome)/var/log/${meName}"
+	##		2: logFileName  If NOT specified, logfile rotation will work, and defaults to "${meName}_${serialDT}.log"
+	##		3: Username for ownership and/or homedir calculation
+	((_vLog_DidInitFsObjs)) && return 0
+	__pLog_InitVars  "${1:-}"  "${2:-}"  "${3:-}"
+	if [[ ! -d "${_vLog_Dir}" ]]; then
+		mkdir -p "${_vLog_Dir}"
+		[[ "root" == "${USER,,}" ]] && chown ${_vLog_Owner}:${_vLog_Owner} "${_vLog_Dir}"
+	fi
+	[[ -n "${_vLog_WiledcardSpec}" ]] && fRemoveOldLogs  "${_vLog_Dir}"  "${_vLog_WiledcardSpec}"  $((_removeOldLogs_default_maxLogfiles - 1))  $_removeOldLogs_default_delNullFilesGeNMinsOld
+	touch "${_vLog_Filespec}"
+	_vLog_DidInitFsObjs=1
+}
+
+fLog_Line(){
+	{ ((! _vLog_DidInitFsObjs)) || [[ -z "${_vLog_Filespec}" ]] || [[ ! -f "${_vLog_Filespec}" ]]; } && fLog_Init
+	echo -e "$(date "+%Y%m%d-%H%M%S")  $1" >> "${_vLog_Filespec}"
+}
+
+fLogAndEchoClean_Line(){
+	{ ((! _vLog_DidInitFsObjs)) || [[ -z "${_vLog_Filespec}" ]] || [[ ! -f "${_vLog_Filespec}" ]]; } && fLog_Init
+	fEcho_Clean "${1}" ; echo -e "$(date "+%Y%m%d-%H%M%S")  ${1}" >> "${_vLog_Filespec}"
+}
+
+fLog_Pipe(){  ## Put this function after a pipe, to log all output of a command.
+	{ ((! _vLog_DidInitFsObjs)) || [[ -z "${_vLog_Filespec}" ]] || [[ ! -f "${_vLog_Filespec}" ]]; } && fLog_Init
+	while IFS= read -r nextLine; do echo -e "$(date "+%Y%m%d-%H%M%S")  ${nextLine}" >> "${_vLog_Filespec}"; done; :
+}
+
+fLogAndEchoClean_Pipe(){  ## Put this function after a pipe, to echo and log all output of a command.
+	{ ((! _vLog_DidInitFsObjs)) || [[ -z "${_vLog_Filespec}" ]] || [[ ! -f "${_vLog_Filespec}" ]]; } && fLog_Init
+	while IFS= read -r nextLine; do fEcho_Clean "${1}"; echo -e "$(date "+%Y%m%d-%H%M%S")  ${nextLine}" >> "${_vLog_Filespec}"; done; :
+}
+
+fLog_Cleanup(){  ## Call after done logging, to clean-up log file permissions.
+	((! _vLog_DidInitFsObjs)) && fThrowError  "Log cleanup called but has not been initialized."  "${FUNCNAME[0]}"
+	[[ "root" == "${USER,,}" ]] && chown ${_vLog_Owner}:${_vLog_Owner} "${_vLog_Filespec}"
+:;}
+
+fLog_Reset(){ _vLog_Dir="" ; _vLog_Filename="" ; _vLog_Filespec="" ; _vLog_WiledcardSpec="" ; _vLog_Owner="" ; _vLog_DidInitVars=0 ; _vLog_DidInitFsObjs=0 ;:;}
+
+__pLog_InitVars(){
+	##	Used by: fLog_Init(), fLog_GetFilespec()
+	((_vLog_DidInitVars)) && return 0
+	local logDir="${1:-}"
+	local logFileName="${2:-}"
+	local userName="${3:-}"
+	[[ -z "${userName}" ]] && fGetOgUserName userName
+	_vLog_Owner="${userName}"
+	if [[ -z "${logDir}"  ]]; then
+		local userHome=""; fGetOgUserHome userHome "${userName}"; local -r userHome="${userHome}"
+		logDir="${userHome}/${defaultLogMiddleSubdirs}/${meName}"
+	fi
+	_vLog_Dir="${logDir}"
+	local _vLog_WiledcardSpec=""
+	if [[ -z "${logFileName}" ]]; then
+		logFileName="${meName}_${serialDT}.log"
+		_vLog_WiledcardSpec="${meName}_*.log"
+	fi
+	_vLog_Filename="${logFileName}"
+	_vLog_Filespec="${_vLog_Dir}/${_vLog_Filename}"
+	_vLog_DidInitVars=1
+}
+
+## Remove old logs
+if [[ -z "${_removeOldLogs_default_maxLogfiles+x}"            ]]; then
+	declare -ri _removeOldLogs_default_maxLogfiles=10
+	declare -ri _removeOldLogs_default_delNullFilesGeNMinsOld=1
+fi
+fRemoveOldLogs(){
+	local -r basePath="${1:-}"                       ## Arg <REQUIRED>: Folder where logfiles go.
+	local -r wildcardFilespec="${2:-}"               ## Arg <REQUIRED>: A filename with at least one required embedded POSIX wildcard in the string (NOT at the shell expansion level). This is to old logs can be deleted.
+	local    keepNewestNlogs="${3:-}"                ## Arg [optional]: Number of newest log files to keep. Defaults to $default_keepNewestNlogs
+	local    removeNullsThisMinutesOrOlder="${4:-}"  ## Arg [optional]: Remove empty files this many minutes or older. 0 to disable.
+	## Arg4: Remove 0-byte matches older than N > 0 minutes old. (Default = 0 which means DISABLE this action.
+	local -ri default_keepNewestNlogs=10
+	local -ri default_removeNullsThisMinutesOrOlder=$((60*24))
+	local -r  safetyCheck_Arg1MustContain="[^a-z0-9](log|archive|old|bak|backup|delete|zip|7z|tar|gz|tgz|xz|bz2|zst)"
+	[[   -z "${basePath}" ]] && fThrowError  "The first argument to this function must be a valid folder to rotate logs in."  "${FUNCNAME[0]}"
+	[[ ! -d "${basePath}" ]] && fThrowError  "The first argument to this function (the folder to rotate logs in) doesn't seem to exist: '${basePath}'."  "${FUNCNAME[0]}"
+	[[ "/" == "$(realpath "${basePath}")" ]] && fThrowError  "For safety purposes, the first argument to this function (the folder to rotate logs in '${basePath}') cannot be the root directory."  "${FUNCNAME[0]}"
+	[[ -z "${wildcardFilespec}" ]] && fThrowError  "The second argument to this function must be a single file name, with at least one POSIX wildcard character embedded in the string (rather than shell expansion variables)."  "${FUNCNAME[0]}"
+	grep -Pq '[*?\[\]]' <<< "${wildcardFilespec}" || fThrowError  "The second argument to this function (log filespec '${wildcardFilespec}') must have at least one POSIX wildcard expression embedded in the string, e.g.: *, ?, []."  "${FUNCNAME[0]}"
+	local -r fullPathspec="$(realpath "${basePath}")/${wildcardFilespec}"
+	grep -iPq "${safetyCheck_Arg1MustContain}" <<< "${fullPathspec}" || fThrowError "For safety purposes, as a crude check against potential massive accidental deletion, the full path/file spec sent to this function must satisfy the following regex: '${safetyCheck_Arg1MustContain}', but doesn't: '${fullPathspec}'."  "${FUNCNAME[0]}"
+	[[ -n "${keepNewestNlogs}" ]] && [[ ! "${keepNewestNlogs}" =~ ^[0-9]$ ]] && fThrowError  "The third argument to this function ('keep newest N logs'), must be an integer, but got '${keepNewestNlogs}' instead."  "${FUNCNAME[0]}"
+	[[ -z "${keepNewestNlogs}" ]] && keepNewestNlogs=${default_keepNewestNlogs}
+	local -ir keepNewestNlogs=$keepNewestNlogs
+	[[ -n "${removeNullsThisMinutesOrOlder}" ]] && [[ ! "${removeNullsThisMinutesOrOlder}" =~ ^[0-9]$ ]] && fThrowError  "The fourth argument to this function ('remove null files N minutes or older'), must be an integer >=0, but got '${removeNullsThisMinutesOrOlder}' instead."  "${FUNCNAME[0]}"
+	[[ -z "${removeNullsThisMinutesOrOlder}" ]] && removeNullsThisMinutesOrOlder=$default_removeNullsThisMinutesOrOlder
+	local -ir removeNullsThisMinutesOrOlder=$removeNullsThisMinutesOrOlder
+	local useRemoveProgram="rm" ; [[ -z "$(which trash 2>/dev/null || true)" ]] && useRemoveProgram="trash"; local -r useRemoveProgram="${useRemoveProgram}"
+	find "${basePath}" -maxdepth 1 -type f -name "${wildcardFilespec}" -printf '%T@ %p\0' | sort -z -n | head -z -n "-${keepNewestNlogs}" | cut -z -d' ' -f2- | xargs -0 -r "${useRemoveProgram}"
+	((removeNullsThisMinutesOrOlder > 0)) && find "${basePath}" -maxdepth 1 -type f -name "${wildcardFilespec}" -empty -mmin +${removeNullsThisMinutesOrOlder} -delete
+:;}
+
+
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Script initialization
+
+## Check if sourced
+declare -i isSourced_t5jqf=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5jqf=1
+((isSourced_t5jqf)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
+
+## Validate the assumption that required n8mod_core_v1 dependency is already loaded
+[[ "${N8MOD_CORE_V1_IS_LOADED:-}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
+
+## Validate this module interface as implemented by consuming script.
+#[[ -n "${THIS_FILEPATH:-}"  ]]  ||  fThrowError "The constant 'THIS_FILEPATH' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_FILENAME:-}"  ]]  ||  fThrowError "The constant 'THIS_FILENAME' must be defined by the parent script, for this module to work."
+#[[ -n "${THIS_DIRPATH:-}"   ]]  ||  fThrowError "The constant 'THIS_DIRPATH' must be defined by the parent script, for this module to work."
+#fIsFunction fLoadModule_v1      ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+
+## Load dependency modules other than n8mod_code_v1.
+#[[ -v N8MOD_STRING_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_string_v1
+
+## Flag this module as loaded.
+[[ -v N8MOD_LOGGING_V1_IS_LOADED ]] || declare -gr N8MOD_LOGGING_V1_IS_LOADED=1
+
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Module Copyright and license:
+##		n8mod_core_v1.1.bash from https://github.com/jim-collier/x9bash5-template
+##		Copyright © 2026 Jim Collier (ID: 1cv◂‡Vᛦ)
+##		Licenced under GPL v2.0-or-later. No warranty.
+##
+##		SPDX-License-Identifier: GPL-2.0-or-later:
+##
+##		This program is free software: you can redistribute it and/or modify
+##		it under the terms of the GNU General Public License as published by
+##		the Free Software Foundation, either version 2 of the License, or
+##		(at your option) any later version.
+##
+##		This program is distributed in the hope that it will be useful,
+##		but WITHOUT ANY WARRANTY; without even the implied warranty of
+##		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##		GNU General Public License for more details.
+##
+##		You should have received a copy of the GNU General Public License
+##		along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
+## Module history:
+##		- 20260517 JC: Created.

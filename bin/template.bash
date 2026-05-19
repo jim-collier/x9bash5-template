@@ -24,14 +24,14 @@
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
-## Settings and constants
+## Module settings and constants
 
 if [[ ! -v doQuietly ]]; then
-
 	## Required by this template
-	declare -gri ARGS_AT_LEAST_ONE_IS_REQUIRED=1
+	declare -gri ARGS_AT_LEAST_ONE_IS_REQUIRED=0
 	declare -gri ARGS_MAX_POSITIONAL_COUNT=0
-
+fi
+if [[ ! -v THIS_FILEPATH ]]; then
 	## Required by n8mod_core_v1
 	declare -gr  THIS_FILEPATH="$(realpath -e "${0}")"
 	declare -gr  THIS_FILENAME="$(basename "${THIS_FILEPATH}")"
@@ -40,7 +40,8 @@ if [[ ! -v doQuietly ]]; then
 	## Populated by n8mod_core_v1
 	declare -g   SERIAL_DATETIME
 	declare -g   RELAUNCH_SENTINELVAL
-
+fi
+if [[ ! -v THIS_VERSION ]]; then
 	## Required by n8mod_user_v1
 	declare -gi doQuietly=0
 	declare -gi doPromptToContinue=1
@@ -49,7 +50,6 @@ if [[ ! -v doQuietly ]]; then
 	declare -gr THIS_COPYRIGHT_YEARS="2011-2026"
 	declare -gr THIS_AUTHOR="Jim Collier"
 	declare -gr LICENSE_SPDX="GPL-2.0-or-later"   ## Valid so far: GPL-2.0-or-later
-
 fi
 
 
@@ -260,49 +260,51 @@ fLoadModule_v1(){
 	## Purpose: Loads a module by name.
 	## E.g.: fLoadModule_v1  'n8mod_core_v1'
 	local -r arg_ModuleName="${1:-}"  # ; shift || :  ## Module name
-	local resolvedPath=""
-	fResolvePath_v1  resolvedPath  arg_ModuleName
+	local resolvedPath
+	fResolvePath_v1  resolvedPath  "${arg_ModuleName}"
 	# shellcheck source=/dev/null
 	[[ -f "${resolvedPath}" ]] && source "${resolvedPath}"
 		## Note that since we're source'ing inside a function, and regular 'declare' in global
 		## scope within those modules, will actually be local scope to this function. The fix
 		## is to just idiomatically always declare global variables/constants with `-g`.
 :;}
+
 fResolvePath_v1(){
 	## Purpose: Resolves an argument to a canonical full path, while being careful to not be too broad as to resolve to something else with the same name.
 	## Searches common 'include|lib'-like sub-paths, then if arg is a single filename, the system $PATH.
 	## Subshells and external tools are OK in this very early function that preceeds any modules being loaded.
-	## Args:
-	local -n ref_Return_ResolvedPath_t4rej=${1:-}  ; shift || :  ## Parent variable to store fully resolved path in.
-	local -n ref_Arg_NameOrPath_t4rej=${1:-}       ; shift || :  ## File or folder path (relative or absolute). If an executable file, can be just a name to search in $PATH, to fully resolve.
-	local -i mustExist=${1:-1}                     ; shift || :  ## 1 [default]: path must exist or error occurs. 0: Just rationalize paths, doesn't have to exist.
+	## Validate nameref args
+	[[ -v 1 ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Calling function must pass a nameref to receive this function's output, as arg1.\n"                           ; return 1; }
+	## Gather args
+	local -n ref_Return_ResolvedPath_t4rej=$1  ; shift || :  ## Parent variable to store fully resolved path in.
+	local -r nameOrPath="${1:-}"               ; shift || :  ## File or folder path (relative or absolute). If an executable file, can be just a name to search in $PATH, to fully resolve.
+	local -i mustExist=${1:-1}                 ; shift || :  ## 1 [default]: path must exist or error occurs. 0: Just rationalize paths, doesn't have to exist.
 	## Validate
-	[[ -v ref_Return_ResolvedPath_t4rej ]]                                    || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): The first argument to this function must be a return variable reference.\n"                           ; return 1; }
-	[[ -v ref_Arg_NameOrPath_t4rej && -n "${ref_Arg_NameOrPath_t4rej:-}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): The second argument to this function must be a variable reference with a file path or executable name.\n" ; return 1; }
+	[[ "${nameOrPath}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Path or executable name not specified.\n" ; return 1; }
 	## Init
 	ref_Return_ResolvedPath_t4rej=""
 	## Obvious test, as-is
-	[[ -e "${ref_Arg_NameOrPath_t4rej}" ]] && { ref_Return_ResolvedPath_t4rej="$(realpath -e "${ref_Arg_NameOrPath_t4rej}")"; return 0; }
+	[[ -e "${nameOrPath}" ]] && { ref_Return_ResolvedPath_t4rej="$(realpath -e "${nameOrPath}")"; return 0; }
 	## Test file with common sub-paths
 	local -r mePath_t4rej="$(dirname "${BASH_SOURCE[0]}")"  ## Pathspec to this script.
 	local -a tryRelSubs=('/'  '/lib/'  '/include/'  '/includes/') ; local -a tryRelPaths=()  ## Common generic library subdirs.
-	for nextSub in "${tryRelSubs[@]}"; do tryRelPaths+=("${BASH_SOURCE[0]}.d${nextSub}${ref_Arg_NameOrPath_t4rej}") ; done  ## "[this script's full pathspec].d/[each common subdir]/[argument]".
-	for nextSub in "${tryRelSubs[@]}"; do tryRelPaths+=("${mePath_t4rej}${nextSub}${ref_Arg_NameOrPath_t4rej}")     ; done  ## "[this script's folder]/[each common subdir]/[argument]".
+	for nextSub in "${tryRelSubs[@]}"; do tryRelPaths+=("${BASH_SOURCE[0]}.d${nextSub}${nameOrPath}") ; done  ## "[this script's full pathspec].d/[each common subdir]/[argument]".
+	for nextSub in "${tryRelSubs[@]}"; do tryRelPaths+=("${mePath_t4rej}${nextSub}${nameOrPath}")     ; done  ## "[this script's folder]/[each common subdir]/[argument]".
 	for nextPath in "${tryRelPaths[@]}"; do [[ -e "${nextPath}" ]] && { ref_Return_ResolvedPath_t4rej="$(realpath -e "${nextPath}")"; return 0; }; done  ## Return realpath if found in the first match.
 	local testPath=""
 	## Try 'which', if arg is a single file.
-	if [[ "${ref_Arg_NameOrPath_t4rej}" != */* ]]; then
-		testPath="$(which "${ref_Arg_NameOrPath_t4rej}" 2>/dev/null || true)"
+	if [[ "${nameOrPath}" != */* ]]; then
+		testPath="$(which "${nameOrPath}" 2>/dev/null || true)"
 		[[ -n "${testPath}" ]] && { ref_Return_ResolvedPath_t4rej="$(realpath -e "${testPath}")"; return 0; }  ## Return 'which'
 	fi
 	## Haven't matched yet: revert to original argument
-	testPath="${ref_Arg_NameOrPath_t4rej}"
+	testPath="${nameOrPath}"
 	if ((mustExist)); then
 		testPath="$(realpath -e "${testPath}" 2>/dev/null || true)"
-		[[ -n "${testPath}" && -e "${testPath}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Could not resolve path '${ref_Arg_NameOrPath_t4rej}' [£ǝŔs].\n"; return 1; }
+		[[ -n "${testPath}" && -e "${testPath}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Could not resolve path '${nameOrPath}' [£ǝŔs].\n"; return 1; }
 	else
 		testPath="$(realpath -m "${testPath}" 2>/dev/null || true)"
-		[[ -n "${testPath}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Could not resolve even optionally nonexistent path '${ref_Arg_NameOrPath_t4rej}' [£ǝŔs].\n"; return 1; }
+		[[ -n "${testPath}" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}")·${FUNCNAME[0]}(): Could not resolve even optionally nonexistent path '${nameOrPath}' [£ǝŔs].\n"; return 1; }
 	fi
 	## Success
 	ref_Return_ResolvedPath_t4rej="${testPath}"
@@ -320,26 +322,26 @@ fResolvePath_v1(){
 ## Check if sourced
 declare -i isSourced_t5ja1=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t5ja1=1
 #((isSourced_t5ja1)) || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is meant to be 'sourced' from within another script.\n"; exit 1; }
-((isSourced_t5ja1)) && { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is not meant to be 'sourced' from within another script.\n"; exit 1; }
+{ ((isSourced_t5ja1)) && [[ "${1:-}" != '--unit-test' ]]; }  &&  { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): This script is not meant to be 'sourced' from within another script, unless for unit-testing.\n"; exit 1; }
 
 ## Load modules
-	fLoadModule_v1  'n8mod_core_v1'
-	[[ -v N8MOD_PROCESS_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_process_v1'
-	[[ -v N8MOD_STRING_V1_IS_LOADED     ]] || fLoadModule_v1  'n8mod_string_v1'
-	[[ -v N8MOD_FILESYS_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_filesys_v1'
+	[[ -v N8MOD_CORE_V1_IS_LOADED       ]] || fLoadModule_v1  'n8mod_core_v1'
 	[[ -v N8MOD_INTERACT_V1_IS_LOADED   ]] || fLoadModule_v1  'n8mod_interact_v1'
-#	[[ -v N8MOD_OOP_V1_IS_LOADED        ]] || fLoadModule_v1  'n8mod_oop_v1'
+	[[ -v N8MOD_STRING_V1_IS_LOADED     ]] || fLoadModule_v1  'n8mod_string_v1'
 #	[[ -v N8MOD_NUMBER_V1_IS_LOADED     ]] || fLoadModule_v1  'n8mod_number_v1'
-#	[[ -v N8MOD_ARRAY_V1_IS_LOADED      ]] || fLoadModule_v1  'n8mod_array_v1'
+#	[[ -v N8MOD_FILESYS_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_filesys_v1'
+#	[[ -v N8MOD_PROCESS_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_process_v1'
 #	[[ -v N8MOD_LOGGING_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_logging_v1'
+#	[[ -v N8MOD_ARRAY_V1_IS_LOADED      ]] || fLoadModule_v1  'n8mod_array_v1'
+#	[[ -v N8MOD_OOP_V1_IS_LOADED        ]] || fLoadModule_v1  'n8mod_oop_v1'
 #	[[ -v N8MOD_ZFS_V1_IS_LOADED        ]] || fLoadModule_v1  'n8mod_zfs_v1'
 #	[[ -v N8MOD_BTRFS_V1_IS_LOADED      ]] || fLoadModule_v1  'n8mod_btrfs_v1'
 #	[[ -v N8MOD_SQL_V1_IS_LOADED        ]] || fLoadModule_v1  'n8mod_sql_v1'
 #	[[ -v N8MOD_SQLITE3_V1_IS_LOADED    ]] || fLoadModule_v1  'n8mod_sqlite3_v1'
 #	[[ -v N8MOD_POSTGRESQL_V1_IS_LOADED ]] || fLoadModule_v1  'n8mod_postgresql_v1'
 
-## Kick everything off
-fInit "${@}"
+## Kick everything off (unless unit-testing)
+[[ "${1:-}" == '--unit-test' ]] || fInit "${@}"
 
 
 ##•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••

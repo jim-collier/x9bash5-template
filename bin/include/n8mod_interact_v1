@@ -79,17 +79,24 @@ fShowCopyright(){
 }
 fShowAbout(){
 	((doQuietly || wasShown_About)) && return 0
-	## Arg
+	## Validate nameref args:
+	[[ -v 1 ]] || fThrowError "Calling function must pass a nameref to supply the input value to this function, as arg1 ('about' text)."
+	## Gather args
 	local -n ptr_AboutText_t5j9j=$1
-	[[ -v ptr_AboutText_t5j9j && -n "${ptr_AboutText_t5j9j:-}" ]] || fThrowError "The one argument to this function must be a caller nameref containing 'about' text."
+	## Validate
+	[[ -n "${ptr_AboutText_t5j9j}" ]] || fThrowError "No 'about' text provided."
+	## Logic
 	fEcho_Clean; fEcho_Clean_byref ptr_AboutText_t5j9j; fEcho_Clean
 	wasShown_About=1
 }
 fShowSyntax(){
 	((doQuietly || wasShown_Syntax)) && return 0
-	## Arg
+	## Validate nameref args:
+	[[ -v 1 ]] || fThrowError "Calling function must pass a nameref to supply the input value to this function, as arg1 (syntax)."
+	## Gather args
 	local -n ptr_SyntaxText_t5j9j=$1
-	[[ -v ptr_SyntaxText_t5j9j && -n "${ptr_SyntaxText_t5j9j:-}" ]] || fThrowError "The one argument to this function must be a caller nameref containing 'syntax' text."
+	## Validate
+	[[ -n "${ptr_SyntaxText_t5j9j:-}" ]] || fThrowError "No 'syntax' text provided."
 	fEcho_Clean; fEcho_Clean_byref ptr_SyntaxText_t5j9j; fEcho_Clean
 	wasShown_Syntax=1
 }
@@ -133,17 +140,17 @@ declare -i isSourced_t5ja2=0; [[ "${BASH_SOURCE[0]}" == "${0}" ]] || isSourced_t
 [[ "${N8MOD_CORE_V1_IS_LOADED}" == "1" ]] || { echo -e "\nError in $(basename "${BASH_SOURCE[0]}"): n8mod_core_v1 is not loaded yet. It's a core dependency that must be loaded first. All other dependencies auto-load.\n" ; exit 1; }
 
 ## Validate this module interface as implemented by consuming script.
-[[ -n "${doQuietly}"                      ]]  ||  fThrowError "The variable 'doQuietly' must be defined by the calling script, for this module to work."
-[[ -n "${doPromptToContinue}"             ]]  ||  fThrowError "The variable 'doPromptToContinue' must be defined by the calling script, for this module to work."
-[[ -n "${ARGS_AT_LEAST_ONE_IS_REQUIRED}"  ]]  ||  fThrowError "The constant 'ARGS_AT_LEAST_ONE_IS_REQUIRED' must be defined by the calling script, for this module to work."
-[[ -n "${THIS_VERSION}"                   ]]  ||  fThrowError "The constant 'THIS_VERSION' must be defined by the calling script, for this module to work."
-[[ -n "${THIS_BUILD}"                     ]]  ||  fThrowError "The constant 'THIS_BUILD' must be defined by the calling script, for this module to work."
-[[ -n "${THIS_COPYRIGHT_YEARS}"           ]]  ||  fThrowError "The constant 'THIS_COPYRIGHT_YEARS' must be defined by the calling script, for this module to work."
-[[ -n "${THIS_AUTHOR}"                    ]]  ||  fThrowError "The constant 'THIS_AUTHOR' must be defined by the calling script, for this module to work."
-[[ -n "${LICENSE_SPDX}"                   ]]  ||  fThrowError "The constant 'LICENSE_SPDX' must be defined by the calling script, for this module to work."
-declare -f  fShowAbout_Local     &>/dev/null  ||  fThrowError "The function 'fShowAbout_Local' must be defined by the calling script, for this module to work. It may in turn call the fShowAbout() helper function in this module."
-declare -f  fShowSyntax_Local    &>/dev/null  ||  fThrowError "The function 'fShowSyntax_Local' must be defined by the calling script, for this module to work. It may in turn call the fShowSyntax() helper function in this module."
-#declare -f  fLoadModule_v1      &>/dev/null  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
+[[ -n "${doQuietly}"                     ]]  ||  fThrowError "The variable 'doQuietly' must be defined by the calling script, for this module to work."
+[[ -n "${doPromptToContinue}"            ]]  ||  fThrowError "The variable 'doPromptToContinue' must be defined by the calling script, for this module to work."
+[[ -n "${ARGS_AT_LEAST_ONE_IS_REQUIRED}" ]]  ||  fThrowError "The constant 'ARGS_AT_LEAST_ONE_IS_REQUIRED' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_VERSION}"                  ]]  ||  fThrowError "The constant 'THIS_VERSION' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_BUILD}"                    ]]  ||  fThrowError "The constant 'THIS_BUILD' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_COPYRIGHT_YEARS}"          ]]  ||  fThrowError "The constant 'THIS_COPYRIGHT_YEARS' must be defined by the calling script, for this module to work."
+[[ -n "${THIS_AUTHOR}"                   ]]  ||  fThrowError "The constant 'THIS_AUTHOR' must be defined by the calling script, for this module to work."
+[[ -n "${LICENSE_SPDX}"                  ]]  ||  fThrowError "The constant 'LICENSE_SPDX' must be defined by the calling script, for this module to work."
+fIsFunction fShowAbout_Local                 ||  fThrowError "The function 'fShowAbout_Local' must be defined by the calling script, for this module to work. It may in turn call the fShowAbout() helper function in this module."
+fIsFunction fShowSyntax_Local                ||  fThrowError "The function 'fShowSyntax_Local' must be defined by the calling script, for this module to work. It may in turn call the fShowSyntax() helper function in this module."
+#fIsFunction fLoadModule_v1                  ||  fThrowError "The function 'fLoadModule_v1' must be defined by the calling script, for this module to work."
 
 ## Load dependency modules other than n8mod_code_v1.
 #[[ -v N8MOD_STRING_V1_IS_LOADED ]] || fLoadModule_v1  n8mod_string_v1

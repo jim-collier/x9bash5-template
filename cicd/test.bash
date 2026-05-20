@@ -62,7 +62,7 @@ if [[ ! -v THIS_VERSION ]]; then
 	declare -gr THIS_BUILD="1n0pagv"
 	declare -gr THIS_COPYRIGHT_YEARS="2011-2026"
 	declare -gr THIS_AUTHOR="Jim Collier"
-	declare -gr LICENSE_SPDX="GPL-2.0-or-later"   ## Valid so far: GPL-2.0-or-later
+	declare -gr LICENSE_SPDX="GPL-2.0-or-later"   ## Valid so far: GPL-2.0-or-later. Easy to add more.
 fi
 
 
@@ -189,7 +189,7 @@ fi
 cd "${meDir_t4rgd}"
 
 ## Source the generic script 'utility/n8test'.
-declare n8test_resolved="../utility/include/n8lib_test"
+declare n8test_resolved="utility/include/n8lib_test"
 fResolvePath_v1  n8test_resolved  "${n8test_resolved}" ; readonly n8test_resolved
 [[ -n "${n8test_resolved}" ]] && source "${n8test_resolved}"
 

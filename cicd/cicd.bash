@@ -37,7 +37,7 @@ if [[ -z "${doQuietly+x}" ]]; then
 	declare    dirAlsoCopyInstall_Subdir_Source="${dirPath_Base}/bin/include"
 	declare    dirAlsoCopyInstall_Subdir_Target="include"
 	declare    filePath_TesterExec="${dirPath_Base}/cicd/test.bash"
-	declare    gitAutomationScript="${dirPath_Base}/utility/n8git_backup-and-publish"
+	declare    gitAutomationScript="${dirPath_Base}/cicd/utility/n8git_backup-and-publish"
 	declare -a preferredInstallTargetPaths=("${HOME}/synced/0-0/common/exec/util/linux/bash"  "/usr/local/sbin/")  ## First one that exists, wins
 	declare -i isCompileProject=0  ## 1: E.g. C++, Rust, Go, etc.  0: E.g. Python, Bash, etc.
 

@@ -19,18 +19,17 @@
 ## Inactive shellchecks
 # shellcheck disable=2034  ## Unused variables.
 
-
 ##	Purpose:
 ##		- CI/CD-friendly test harness that passes or fails.
 ##		- Tests random output and round-trips through v2 to make sure the initial output was correct (at least if v2 is also correct).
 ##		- This is NOT part of cicd script, as it's not a requirement to have v2 installed.
 ##	History: At bottom of this file. (Note: History for this is maintained outside of [or in addition to] git project.)
 
-##	Copyright
-##		Copyright © 2026 Jim Collier (ID: 1cv◂‡Vᛦ)
-##		Licensed under the GNU General Public License v2.0 or later. Full text at:
-##			https://spdx.org/licenses/GPL-2.0-or-later.html
-##		SPDX-License-Identifier: GPL-2.0-or-later
+##	Copyright © 2026 Jim Collier (ID: 1cv◂‡Vᛦ)
+##	Licensed under The MIT License (MIT). Full text at:
+##		https://mit-license.org/
+##	SPDX-License-Identifier: MIT
+
 
 ## Global settings
 declare doLongTest=0 ; [[ "${CICDTEST_DO_LONGTEST}" == "1" ]] && doLongTest=1
@@ -211,3 +210,6 @@ fEntryPoint | fPipe_LogAndShowPartialOutput
 #••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
 ##	Script history:
 ##		- 20260518 JC: Copied from convert-base-v1b and updated for this project.
+##		- 20260519-20 JC:
+##			- Updated for updated n8lib_test.
+##			- Changed license from GPL2 to MIT.

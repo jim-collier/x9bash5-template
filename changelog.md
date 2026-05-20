@@ -24,24 +24,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Other work
 -->
 
-## v11.0.0-beta1 - 2026-05-18
+## v11.0.0-beta1 - WIP
 
 ### Notes
 
-This is a significant refactor - in scope, but not so much actual effort. It encapsulates many ideas, and fixes some sore spots, I've wanted to address for years.
+This is a significant refactor - in scope, but not so much actual effort. It encapsulates many ideas - and addresses some sore spots - that I've wanted to get to for years. Or at least, is a good first step.
 
-It's also a revisit to an idea this library started out as long ago (a dynamic includable library), but the implementation back then was severely flawed, with a poor understanding at the time of the subtleties of bash script mechanics.
+It's also a revisit to an idea this library started out as long ago: a dynamic includable library. But the implementation long ago was severely flawed, with a poor understanding at the time of the subtleties of bash script mechanics and gotchas, that only >decade of working with it can hammer into the heads of old programmers that find it hard to let go of "the way things *should* work".
+
+To be fair, it's also difficult to let go of some outmoded ideas of what shell script even "is" or can do, after:
+
+- Decades of writing absolutely torturous DOS `.bat` files and Windows `.cmd` "scripts", if you can even call the language that.
+
+- Being confidently informed by expert blogs and StackExchange posts online - and foolishly believing it - that Bash scripts are "supposed" to be POSIX-compliant - thus crippling the actually pretty powerful Bash language - to something weak, brittle, and effectively frozen in 1988. (Old enough to rent a car in the US since 2023. Old enough to drink since 2019. Old enough to vote since 2016.)
 
 ### Added
 
-- CI/CD scripts.
+- Changed licence of CICD scripts from GPL2 to MIT. [20260520]
+- CI/CD scripts. [20260519]
 
 ### Changed
 
 - Refactored to be modular dynamic libraries instead of one monolithic static template.
-	- *There's still a required template though to implement required module interfaces, it's just much smaller.*
+	- *There's still a required template though to implement required module interfaces, it's just a much smaller script overall. And modular.*
 - Fixed linter errors.
-- AI-assisted debugging.
+- Claude-assisted debugging.
 
 ## v10.0.0-beta2 - 2026-04-09
 
@@ -56,7 +63,7 @@ It's also a revisit to an idea this library started out as long ago (a dynamic i
 
 As of 2025-07-11, this is the biggest update in 14 years, possibly 17 (and its first time on github).
 
-Many of the changes involve embracing native Bash v5 idioms, and a higher reliance on native idioms in general - which allowed for simplifying and removing functions.
+Many of the changes involve embracing slowly moving to more native Bash idioms (and v5 idioms), and a higher reliance on native idioms in general - which allowed for simplifying and removing functions.
 
 (But there are still plenty of functions that could/should easily get the axe with little pain or possibly even notice. Possibly even some that were written just for this version.)
 

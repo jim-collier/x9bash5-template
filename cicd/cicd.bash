@@ -20,10 +20,10 @@
 ##	Purpose: Wrapper for build, test, copy to local for dogfood, push to github. Calls test.sh, no need to call that separately.
 ##	History: At bottom of this file. (Note: History for this is maintained outside of [or in addition to] git project.)
 
-##	Copyright © 2022-2026 Jim Collier (ID: 1cv◂‡Vᛦ)
-##	Licensed under the GNU General Public License v2.0 or later. Full text at:
-##		https://spdx.org/licenses/GPL-2.0-or-later.html
-##	SPDX-License-Identifier: GPL-2.0-or-later
+##	Copyright © 2026 Jim Collier (ID: 1cv◂‡Vᛦ)
+##	Licensed under The MIT License (MIT). Full text at:
+##		https://mit-license.org/
+##	SPDX-License-Identifier: MIT
 
 
 #•••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
@@ -50,7 +50,7 @@ if [[ -z "${doQuietly+x}" ]]; then
 	declare -r  thisAuthor="Jim Collier"           ## Put your copyright name here.
 	declare -ri atLeastOneArgRequired=0
 	declare -ri doAsSudo=0
-
+	declare -i wasShown_Version=0 wasShown_Copyright=0 wasShown_About=0 wasShown_Syntax=0
 fi
 
 
@@ -58,16 +58,16 @@ fi
 ## Note: Echoing rather than HEREDOC is preferrable because - while slower - that's not
 ##       an issue in this context, and more importantly, HEREDOC is too hard to manage
 ##       indentation, esp. for the fSyntax() section.
-declare -i wasShown_Version=0 wasShown_Copyright=0 wasShown_About=0 wasShown_Syntax=0
 
 fVersion(){ { ((doQuietly)) || ((wasShown_Version)); } && return; wasShown_Version=1;
 	fEcho_Clean "${meName} v${thisVersion} build ${thisBuild}" ;:;}
 
-fCopyright(){ { ((doQuietly)) || ((wasShown_Copyright)); } && return; wasShown_Copyright=1;
+fCopyright(){ { ((doQuietly)) || ((wasShown_Copyright)); } && return; wasShown_Copyright=1; wasShown_Version=1
 	fEcho_Clean ""
-	fEcho_Clean "${meName}, Copyright © ${thisCopyrightYear} ${thisAuthor}."  ## Don't show version info. Can confuse with the version of the product being built.
-	fEcho_Clean "Licensed under the GNU General Public License v2.0 or later. Full text at:"
-	fEcho_Clean "  https://spdx.org/licenses/GPL-2.0-or-later.html"
+	## Don't show version info, because it can confuse user with the version of the product being built.
+	fEcho_Clean "${meName}, Copyright © ${thisCopyrightYear} ${thisAuthor}."
+	fEcho_Clean "Licensed under The MIT License (MIT). Full text at:"
+	fEcho_Clean "  https://mit-license.org/"
 	fEcho_Clean "No warranty."
 	fEcho_Clean "" ;:;}
 
@@ -87,11 +87,6 @@ fAbout(){ { ((doQuietly)) || ((wasShown_About)); } && return; wasShown_About=1;
 
 fSyntax(){  { ((doQuietly)) || ((wasShown_Syntax)); } && return; wasShown_Syntax=1;
 	fEcho_Clean ""
-	#           X-------------------------------------------------------------------------------X
-	fEcho_Clean "Arguments:"
-	fEcho_Clean "  --quiet"
-	fEcho_Clean "      [optional]: Be less verbose, and don't prompt user to continue."
-	fEcho_Clean "  --help, --version [or -h, -v]"
 	#           X-------------------------------------------------------------------------------X
 	fEcho_Clean "" ;:;}
 
@@ -204,18 +199,18 @@ fMain(){
 		if [[ "${installPath}" == "${HOME}/"* ]]; then
 
 			## Install within ${HOME} without sudo
-echo			cp -a --reflink=auto "${filePath_ResultingExecToTestAndInstall}"  "${installPath%%/}/"
+			cp -av --update=older --reflink=auto "${filePath_ResultingExecToTestAndInstall}"  "${installPath%%/}/"
 			if [[ -n "${dirAlsoCopyInstall_Subdir_Source}"  &&  -n "${dirAlsoCopyInstall_Subdir_Target}" ]]; then
 				## Also subdir
 				[[ -d "${dirAlsoCopyInstall_Subdir_Target}" ]] || mkdir -p "${dirAlsoCopyInstall_Subdir_Target}"
-echo				rsync -rulEXt "${dirAlsoCopyInstall_Subdir_Source%%/}/"  "${dirAlsoCopyInstall_Subdir_Target%%/}/"
+				rsync -rulEXt "${dirAlsoCopyInstall_Subdir_Source%%/}/"  "${dirAlsoCopyInstall_Subdir_Target%%/}/"
 			fi
 
 		else
 
 			## Install elsewhere, falling back to sudo if necessary
-			cp -a --reflink=auto "${filePath_ResultingExecToTestAndInstall}"  "${installPath%%/}/" 2>/dev/null  || \
-				sudo cp -a --reflink=auto "${filePath_ResultingExecToTestAndInstall}"  "${installPath%%/}/"
+			cp -av --update=older --reflink=auto "${filePath_ResultingExecToTestAndInstall}"  "${installPath%%/}/" 2>/dev/null  || \
+				sudo cp -av --update=older --reflink=auto "${filePath_ResultingExecToTestAndInstall}"  "${installPath%%/}/"
 			if [[ -n "${dirAlsoCopyInstall_Subdir_Source}"  &&  -n "${dirAlsoCopyInstall_Subdir_Target}" ]]; then
 				## Also subdir, falling back to sudo if necessary
 				[[ -d "${dirAlsoCopyInstall_Subdir_Target}" ]] || { mkdir -p "${dirAlsoCopyInstall_Subdir_Target}" 2>/dev/null  || sudo mkdir -p "${dirAlsoCopyInstall_Subdir_Target}"; }
@@ -477,4 +472,8 @@ fMain  "${@}"
 ##		- 20260421 JC: Finished.
 ##		- 20260422-23 JC: Copied and updated for convert-base-v1b.
 ##		- 20260422-23 JC: Copied and updated for x9bash5-template.
-##		- 20260519 JC: Removed some unnecessary old boilerplate cruft from this script.
+##		- 20260519-20 JC:
+##			- Removed some template cruft.
+##			- Better cp args.
+##			- Updated fEcho functions.
+##			- Changed license from GPL2 to MIT.
